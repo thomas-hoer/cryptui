@@ -26,13 +26,14 @@ import org.bouncycastle.util.encoders.Hex;
 public class SHA3Hash {
 
     public static byte[] hash(byte[] input) {
-        
+
         //MAC.
         SHA3.DigestSHA3 digestSHA3 = new SHA3.Digest512();
         byte[] digest = digestSHA3.digest(input);
         System.out.println("SHA3-512 = " + Hex.toHexString(digest));
         return digest;
     }
+
     public static void main(String[] args) throws Exception {
         byte[] hash = hash("test".getBytes());
         System.out.println(hash.length);

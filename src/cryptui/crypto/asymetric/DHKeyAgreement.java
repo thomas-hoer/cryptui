@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Ich.
+ * Copyright 2017 thomas-hoer.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,16 +39,16 @@ public class DHKeyAgreement {
         Security.addProvider(new BouncyCastleProvider());
 
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DH");
- 
+
         keyGen.initialize(2048, new SecureRandom());
         KeyPair aPair = keyGen.generateKeyPair();
         KeyPair bPair = keyGen.generateKeyPair();
- 
+
         KeyAgreement keyAgree = KeyAgreement.getInstance("DH");
 
         keyAgree.init(aPair.getPrivate());
         keyAgree.doPhase(bPair.getPublic(), true);
-        
+
         final byte[] generateSecret = keyAgree.generateSecret();
         System.out.println(generateSecret.length);
         System.out.println(new String(generateSecret));

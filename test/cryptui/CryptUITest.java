@@ -34,7 +34,7 @@ public class CryptUITest {
     public static void setUpClass() {
         Security.addProvider(new BouncyCastleProvider());
     }
-    
+
     @Test
     public void encryptRSATest() throws GeneralSecurityException {
         KeyPair keyPair = RSA.generateKeyPair();
@@ -47,7 +47,7 @@ public class CryptUITest {
         byte[] data4 = RSA.decrypt(keyPair.getPrivate(), data3);
         assertEquals(TEST,new String(data4));
     }
-    
+
     @Test
     public void AESTest() throws Exception{
         AES aes = new AES();

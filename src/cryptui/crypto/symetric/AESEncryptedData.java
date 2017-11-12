@@ -20,14 +20,15 @@ package cryptui.crypto.symetric;
  * @author Ich
  */
 public class AESEncryptedData {
-    
+
     private byte[] iv;
     private byte[] data;
 
-    public AESEncryptedData(byte[] iv, byte[] data){
+    public AESEncryptedData(byte[] iv, byte[] data) {
         this.iv = iv;
         this.data = data;
     }
+
     public byte[] getIv() {
         return iv;
     }

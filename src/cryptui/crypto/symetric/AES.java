@@ -48,7 +48,7 @@ public class AES {
     }
 
     public AESEncryptedData encrypt(byte[] src) throws Exception {
-        SecureRandom r = new SecureRandom(); 
+        SecureRandom r = new SecureRandom();
         byte[] iv = new byte[12];
         r.nextBytes(iv);
         GCMParameterSpec params = new GCMParameterSpec(128, iv, 0, 12);

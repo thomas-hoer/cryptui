@@ -20,7 +20,8 @@ import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class GZip {
-    public void load(OutputStream out) throws IOException{
+
+    public void load(OutputStream out) throws IOException {
         GZIPOutputStream gzip = new GZIPOutputStream(out);
     }
 }

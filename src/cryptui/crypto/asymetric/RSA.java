@@ -94,5 +94,4 @@ public class RSA {
         return cipher.doFinal(data);
     }
 
-
 }

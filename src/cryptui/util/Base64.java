@@ -15,9 +15,9 @@
  */
 package cryptui.util;
 
-
 public class Base64 {
-    public void load(){
+
+    public void load() {
         Base64 b = new Base64();
     }
 }
