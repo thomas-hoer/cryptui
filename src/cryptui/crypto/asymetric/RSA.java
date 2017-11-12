@@ -42,7 +42,7 @@ public class RSA {
 
     public static KeyPair generateKeyPair() throws GeneralSecurityException {
         KeyPairGenerator keyPair = KeyPairGenerator.getInstance("RSA");
-        keyPair.initialize(new RSAKeyGenParameterSpec(3072, RSAKeyGenParameterSpec.F4));
+        keyPair.initialize(new RSAKeyGenParameterSpec(4096, RSAKeyGenParameterSpec.F4));
         return keyPair.generateKeyPair();
     }
 
@@ -82,14 +82,14 @@ public class RSA {
 
     public static byte[] encrypt(Key key, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING");
+        Cipher cipher = Cipher.getInstance("RSA/None/OAEPWithSHA3-512AndMGF1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, key);
         return cipher.doFinal(data);
     }
 
     public static byte[] decrypt(Key key, byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING");
+        Cipher cipher = Cipher.getInstance("RSA/None/OAEPWithSHA3-512AndMGF1Padding");
         cipher.init(Cipher.DECRYPT_MODE, key);
         return cipher.doFinal(data);
     }
