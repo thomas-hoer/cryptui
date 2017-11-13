@@ -15,13 +15,12 @@
  */
 package cryptui.crypto.hash;
 
-import static java.security.CryptoPrimitive.MAC;
 import org.bouncycastle.jcajce.provider.digest.SHA3;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
  *
- * @author Ich
+ * @author thomas-hoer
  */
 public class SHA3Hash {
 

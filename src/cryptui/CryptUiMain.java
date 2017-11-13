@@ -15,24 +15,22 @@
  */
 package cryptui;
 
-import cryptui.crypto.asymetric.RSA;
 import cryptui.ui.CryptUI;
 import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
  *
- * @author Ich
+ * @author thomas-hoer
  */
 public class CryptUiMain {
 
-    public static final String test = "Hallo Welt";
-
     /**
      * @param args the command line arguments
+     * @throws java.security.GeneralSecurityException
+     * @throws java.io.UnsupportedEncodingException
      */
     public static void main(String[] args) throws GeneralSecurityException, UnsupportedEncodingException {
         Security.addProvider(new BouncyCastleProvider());

@@ -15,23 +15,16 @@
  */
 package cryptui.crypto.asymetric;
 
-import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.Security;
 import javax.crypto.KeyAgreement;
-import javax.crypto.spec.DHParameterSpec;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.asn1.x9.DHDomainParameters;
-import org.bouncycastle.asn1.x9.DomainParameters;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**
  *
- * @author Ich
+ * @author thomas-hoer
  */
 public class DHKeyAgreement {
 
@@ -60,5 +53,3 @@ public class DHKeyAgreement {
     }
 
 }
-
-    //ECCDHwithSHA512KDF

@@ -17,12 +17,12 @@ package cryptui.crypto.symetric;
 
 /**
  *
- * @author Ich
+ * @author thomas-hoer
  */
 public class AESEncryptedData {
 
-    private byte[] iv;
-    private byte[] data;
+    private final byte[] iv;
+    private final byte[] data;
 
     public AESEncryptedData(byte[] iv, byte[] data) {
         this.iv = iv;

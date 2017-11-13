@@ -15,13 +15,39 @@
  */
 package cryptui.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.security.SecureRandom;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import org.apache.commons.io.IOUtils;
 
 public class GZip {
 
     public void load(OutputStream out) throws IOException {
         GZIPOutputStream gzip = new GZIPOutputStream(out);
+    }
+    
+    public static final int DATA_SIZE = 1024*1024;
+    
+    public static void main(String[] args) throws IOException{
+        byte[] data = new byte[DATA_SIZE];
+        SecureRandom random = new SecureRandom();
+        random.nextBytes(data);
+        
+        ByteArrayOutputStream obj=new ByteArrayOutputStream();
+         GZIPOutputStream gzip = new GZIPOutputStream(obj);
+        gzip.write(data);
+        gzip.close();
+        System.out.println(data.length);
+        byte[] compressed = obj.toByteArray();
+        System.out.println(compressed.length);
+        
+        ByteArrayInputStream bais = new ByteArrayInputStream(compressed);
+        GZIPInputStream gis = new GZIPInputStream(bais);
+        byte[] bytes = IOUtils.toByteArray(gis);
+        System.out.println(bytes.length);
     }
 }
