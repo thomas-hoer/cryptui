@@ -15,10 +15,19 @@
  */
 package cryptui.ui;
 
+import cryptui.crypto.asymetric.RSA;
+import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.ImageIcon;
 import javax.swing.DefaultListModel;
+import javax.swing.JFileChooser;
 import org.apache.commons.io.IOUtils;
 
 /**
@@ -27,6 +36,7 @@ import org.apache.commons.io.IOUtils;
  */
 public class CryptUI extends javax.swing.JFrame {
 
+    private static File HOME_DIRECTORY;
     private final DefaultListModel list;
 
     /**
@@ -34,6 +44,35 @@ public class CryptUI extends javax.swing.JFrame {
      */
     public CryptUI() {
         initComponents();
+        setIconImage();
+        list = new DefaultListModel();
+        jList1.setModel(list);
+        File home = getHomeDirectory();
+        File keyDir = getKeysDirectory(home);
+        for (File file:keyDir.listFiles()){
+            if(file.isFile()){
+                loadKey(file);
+            }
+        }
+    }
+
+    private File getKeysDirectory(){
+                File home = getHomeDirectory();
+                return getKeysDirectory(home);
+    }
+    private File getKeysDirectory(File home) {
+        File[] keys = home.listFiles((d,f)->"key".equals(f));
+        File keyDir;
+        if (keys.length==0){
+            keyDir = new File(home.getAbsolutePath()+"/key");
+            keyDir.mkdir();
+        }else{
+            keyDir = keys[0];
+        }
+        return keyDir;
+    }
+
+    private void setIconImage() {
         try (InputStream in = getClass().getResourceAsStream("/cryptui/ui/logo_ui.png")) {
             byte[] b = IOUtils.toByteArray(in);
             ImageIcon icon = new ImageIcon(b);
@@ -41,10 +80,34 @@ public class CryptUI extends javax.swing.JFrame {
         } catch (IOException e) {
             // Do nothing, its only a ui icon
         }
-        list = new DefaultListModel();
-        jList1.setModel(list);
     }
-
+    
+    private File getHomeDirectory(){
+        if (HOME_DIRECTORY != null){
+            return HOME_DIRECTORY;
+        }
+        
+        String dir;
+        dir = System.getenv("LOCALAPPDATA");
+        if (dir != null){
+            File file = new File(dir+"/cryptui");
+            file.mkdir();
+            if(file.exists()){
+                HOME_DIRECTORY = file;
+                return HOME_DIRECTORY;
+            }
+        }
+        dir = System.getProperty("user.home");
+        if (dir != null){
+            File file = new File(dir+"/cryptui");
+            file.mkdir();
+            if(file.exists()){
+                HOME_DIRECTORY = file;
+                return HOME_DIRECTORY;
+            }
+        }
+        return null;
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -65,8 +128,18 @@ public class CryptUI extends javax.swing.JFrame {
         setTitle("Crypt UI");
 
         jButton1.setText("Load Key");
+        jButton1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jButton1MouseClicked(evt);
+            }
+        });
 
         jButton2.setText("Create New Key");
+        jButton2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jButton2MouseClicked(evt);
+            }
+        });
 
         jButton3.setText("Create Group Key");
 
@@ -106,6 +179,29 @@ public class CryptUI extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
+        JFileChooser fc = new JFileChooser();
+        int returnVal = fc.showOpenDialog(this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File file = fc.getSelectedFile();
+        }
+    }//GEN-LAST:event_jButton1MouseClicked
+
+    private void jButton2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton2MouseClicked
+        try {
+            KeyPair keyPair = RSA.generateKeyPair();
+            PrivateKey privateKey = keyPair.getPrivate();
+                    File keysDir = getKeysDirectory();
+                    File newKey = new File(keysDir.getAbsolutePath()+"/"+privateKey.toString()+".key");
+
+            RSA.saveKeyInFile(privateKey, newKey);
+            list.addElement(privateKey);
+        } catch (GeneralSecurityException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_jButton2MouseClicked
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
@@ -114,4 +210,9 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JList<String> jList1;
     private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables
+
+    private void loadKey(File file) {
+        PrivateKey key = RSA.loadPrivateKeyFromFile(file);
+        list.addElement(key);
+    }
 }
