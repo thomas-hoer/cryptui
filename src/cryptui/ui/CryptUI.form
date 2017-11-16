@@ -28,16 +28,27 @@
               <Group type="103" groupAlignment="1" max="-2" attributes="0">
                   <Component id="jScrollPane1" alignment="0" pref="0" max="32767" attributes="0"/>
                   <Group type="102" alignment="0" attributes="0">
-                      <Component id="jButton1" min="-2" pref="99" max="-2" attributes="0"/>
+                      <Component id="loadKeyButton" min="-2" pref="99" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jButton2" min="-2" max="-2" attributes="0"/>
+                      <Component id="newKeyButton" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jButton3" min="-2" max="-2" attributes="0"/>
+              <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                  <Group type="102" attributes="0">
+                      <Component id="newGroupKeyButton" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="importKeyButton" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="exportPublicKeyButton" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="encryptFileButton" min="-2" max="-2" attributes="0"/>
+                  </Group>
+                  <Component id="jPanel1" max="32767" attributes="0"/>
+              </Group>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jButton4" min="-2" max="-2" attributes="0"/>
-              <EmptySpace min="0" pref="42" max="32767" attributes="0"/>
+              <Component id="decryptFileButton" min="-2" max="-2" attributes="0"/>
+              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -45,40 +56,46 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="jButton1" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="jButton2" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="jButton3" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="jButton4" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="loadKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="newKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="newGroupKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="importKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="exportPublicKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="encryptFileButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="decryptFileButton" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jScrollPane1" pref="271" max="32767" attributes="0"/>
+              <Group type="103" groupAlignment="0" attributes="0">
+                  <Component id="jScrollPane1" pref="271" max="32767" attributes="0"/>
+                  <Component id="jPanel1" max="32767" attributes="0"/>
+              </Group>
           </Group>
       </Group>
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Component class="javax.swing.JButton" name="jButton1">
+    <Component class="javax.swing.JButton" name="loadKeyButton">
       <Properties>
         <Property name="text" type="java.lang.String" value="Load Key"/>
       </Properties>
       <Events>
-        <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="jButton1MouseClicked"/>
+        <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="loadKeyButtonMouseClicked"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="jButton2">
+    <Component class="javax.swing.JButton" name="newKeyButton">
       <Properties>
         <Property name="text" type="java.lang.String" value="Create New Key"/>
       </Properties>
       <Events>
-        <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="jButton2MouseClicked"/>
+        <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="newKeyMouseClicked"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="jButton3">
+    <Component class="javax.swing.JButton" name="newGroupKeyButton">
       <Properties>
         <Property name="text" type="java.lang.String" value="Create Group Key"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JButton" name="jButton4">
+    <Component class="javax.swing.JButton" name="importKeyButton">
       <Properties>
         <Property name="text" type="java.lang.String" value="Import Key"/>
       </Properties>
@@ -90,7 +107,7 @@
 
       <Layout class="org.netbeans.modules.form.compat2.layouts.support.JScrollPaneSupportLayout"/>
       <SubComponents>
-        <Component class="javax.swing.JList" name="jList1">
+        <Component class="javax.swing.JList" name="keyList">
           <Properties>
             <Property name="model" type="javax.swing.ListModel" editor="org.netbeans.modules.form.editors2.ListModelEditor">
               <StringArray count="0"/>
@@ -102,5 +119,112 @@
         </Component>
       </SubComponents>
     </Container>
+    <Container class="javax.swing.JPanel" name="jPanel1">
+
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" alignment="0" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Group type="103" groupAlignment="0" attributes="0">
+                      <Component id="newKeyStrengthRadio4096" min="-2" max="-2" attributes="0"/>
+                      <Component id="newKeyTypeRadioRSA" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                          <Component id="newKeyNameLabel" min="-2" max="-2" attributes="0"/>
+                          <Component id="newKeyCommentLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="newKeyComment" alignment="0" pref="152" max="32767" attributes="0"/>
+                          <Component id="newKeyName" alignment="0" max="32767" attributes="0"/>
+                      </Group>
+                      <Component id="newKeyTypeLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="newKeyStrenghtLabel" alignment="0" min="-2" max="-2" attributes="0"/>
+                  </Group>
+                  <EmptySpace max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" alignment="0" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="newKeyNameLabel" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="newKeyName" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace min="-2" pref="13" max="-2" attributes="0"/>
+                  <Component id="newKeyCommentLabel" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="newKeyComment" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <Component id="newKeyTypeLabel" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="newKeyTypeRadioRSA" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <Component id="newKeyStrenghtLabel" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <Component id="newKeyStrengthRadio4096" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JLabel" name="newKeyNameLabel">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Name"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="newKeyCommentLabel">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Comment"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JTextField" name="newKeyComment">
+        </Component>
+        <Component class="javax.swing.JTextField" name="newKeyName">
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="newKeyNameActionPerformed"/>
+          </Events>
+        </Component>
+        <Component class="javax.swing.JLabel" name="newKeyTypeLabel">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Type"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JRadioButton" name="newKeyTypeRadioRSA">
+          <Properties>
+            <Property name="selected" type="boolean" value="true"/>
+            <Property name="text" type="java.lang.String" value="RSA"/>
+          </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="newKeyTypeRadioRSAActionPerformed"/>
+          </Events>
+        </Component>
+        <Component class="javax.swing.JLabel" name="newKeyStrenghtLabel">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="Strenght"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JRadioButton" name="newKeyStrengthRadio4096">
+          <Properties>
+            <Property name="selected" type="boolean" value="true"/>
+            <Property name="text" type="java.lang.String" value="4096 Bit"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Component class="javax.swing.JButton" name="exportPublicKeyButton">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Export Public Key"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="encryptFileButton">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Encrypt File"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="decryptFileButton">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Decrypt File"/>
+      </Properties>
+    </Component>
   </SubComponents>
 </Form>

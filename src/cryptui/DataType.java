@@ -13,26 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cryptui.crypto.hash;
+package cryptui;
 
-import org.bouncycastle.jcajce.provider.digest.SHA3;
-import org.bouncycastle.util.encoders.Hex;
-
-/**
- *
- * @author thomas-hoer
- */
-public class SHA3Hash {
-
-    public static byte[] hash(byte[] input) {
-        SHA3.DigestSHA3 digestSHA3 = new SHA3.Digest512();
-        byte[] digest = digestSHA3.digest(input);
-        System.out.println("SHA3-512 = " + Hex.toHexString(digest));
-        return digest;
+public enum DataType {
+    PRIVATE_KEY(1),
+    PUBLIC_KEY(2),
+    OBJECT_NAME(3),
+    DESCRIPTION_SHORT(4);
+    
+    private final byte number;
+    
+    private DataType(int number){
+        this.number =(byte) number;
     }
-
-    public static void main(String[] args) throws Exception {
-        byte[] hash = hash("test".getBytes());
-        System.out.println(hash.length);
+    public byte getNumber(){
+        return number;
     }
 }

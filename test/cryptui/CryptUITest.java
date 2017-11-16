@@ -37,15 +37,12 @@ public class CryptUITest {
 
     @Test
     public void encryptRSATest() throws GeneralSecurityException {
-        KeyPair keyPair = RSA.generateKeyPair();
+        RSA rsa = new RSA("","");
 
-        byte[] data1 = RSA.encrypt(keyPair.getPrivate(), TEST.getBytes());
-        byte[] data2 = RSA.decrypt(keyPair.getPublic(), data1);
+        byte[] data1 = rsa.encrypt(TEST.getBytes());
+        byte[] data2 = rsa.decrypt(data1);
         assertEquals(TEST,new String(data2));
 
-        byte[] data3 = RSA.encrypt(keyPair.getPublic(), TEST.getBytes());
-        byte[] data4 = RSA.decrypt(keyPair.getPrivate(), data3);
-        assertEquals(TEST,new String(data4));
     }
 
     @Test

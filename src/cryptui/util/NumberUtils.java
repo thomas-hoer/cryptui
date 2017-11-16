@@ -15,9 +15,15 @@
  */
 package cryptui.util;
 
-public class Base64 {
+import java.nio.ByteBuffer;
 
-    public void load() {
-        Base64 b = new Base64();
+public class NumberUtils {
+
+    public static final byte[] intToByteArray(int value) {
+        return ByteBuffer.allocate(4).putInt(value).array();
+    }
+
+    public static final int byteArrayToInt(byte[] array) {
+        return ByteBuffer.wrap(array).getInt();
     }
 }
