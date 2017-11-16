@@ -36,19 +36,17 @@
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" max="-2" attributes="0">
                   <Group type="102" attributes="0">
-                      <Component id="newGroupKeyButton" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
                       <Component id="importKeyButton" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="exportPublicKeyButton" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="encryptFileButton" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <Component id="jPanel1" max="32767" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
+              <Component id="encryptFileButton" min="-2" max="-2" attributes="0"/>
+              <EmptySpace max="-2" attributes="0"/>
               <Component id="decryptFileButton" min="-2" max="-2" attributes="0"/>
-              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+              <EmptySpace min="0" pref="8" max="32767" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -58,7 +56,6 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="loadKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="newKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="newGroupKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="importKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="exportPublicKeyButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="encryptFileButton" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -89,11 +86,6 @@
       <Events>
         <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="newKeyMouseClicked"/>
       </Events>
-    </Component>
-    <Component class="javax.swing.JButton" name="newGroupKeyButton">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="Create Group Key"/>
-      </Properties>
     </Component>
     <Component class="javax.swing.JButton" name="importKeyButton">
       <Properties>
@@ -220,6 +212,9 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="Encrypt File"/>
       </Properties>
+      <Events>
+        <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="encryptFileButtonMouseClicked"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JButton" name="decryptFileButton">
       <Properties>

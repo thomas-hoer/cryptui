@@ -15,6 +15,8 @@
  */
 package cryptui.util;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public class NumberUtils {
@@ -25,5 +27,11 @@ public class NumberUtils {
 
     public static final int byteArrayToInt(byte[] array) {
         return ByteBuffer.wrap(array).getInt();
+    }
+    
+    public static final int intFromInputStream(InputStream is) throws IOException{
+        byte[] bytes = new byte[4];
+        is.read(bytes);
+        return byteArrayToInt(bytes);
     }
 }

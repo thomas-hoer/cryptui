@@ -15,12 +15,25 @@
  */
 package cryptui;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum DataType {
     PRIVATE_KEY(1),
     PUBLIC_KEY(2),
     OBJECT_NAME(3),
-    DESCRIPTION_SHORT(4);
+    DESCRIPTION_SHORT(4),
+    AES_ENCRYPTED_DATA(5),
+    RSA_ENCRYPTED_DATA(6),
+    AES_KEY(7);
     
+    private static Map<Integer,DataType> numberToType;
+    static{
+        numberToType = new HashMap<>();
+        for(DataType dataType : DataType.values()){
+            numberToType.put((int)dataType.getNumber(), dataType);
+        }
+    }
     private final byte number;
     
     private DataType(int number){
@@ -29,4 +42,9 @@ public enum DataType {
     public byte getNumber(){
         return number;
     }
+    
+    public static DataType fromByte(int type){
+        return numberToType.get(type);
+    }
+    
 }

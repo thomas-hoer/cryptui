@@ -36,6 +36,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAKeyGenParameterSpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,9 +68,43 @@ public class RSA {
         generateKeyPair();
     }
 
-    private RSA() {
-        this.name = "from File";
-        this.comment = null;
+    public RSA(File file) {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
+
+            //TODO: Remove duplication
+            DataType nameType = DataType.fromByte(fis.read());
+            assert(nameType == DataType.OBJECT_NAME);
+            int nameLenght = fis.read();
+            byte[] nameBytes = new byte[nameLenght];
+            fis.read(nameBytes);
+            name = new String(nameBytes, "UTF-8");
+
+            DataType commentType = DataType.fromByte(fis.read());
+            assert(commentType == DataType.DESCRIPTION_SHORT);
+            int commentLenght = fis.read();
+            byte[] commentBytes = new byte[commentLenght];
+            fis.read(commentBytes);
+            comment = new String(commentBytes, "UTF-8");
+            
+            DataType privateType = DataType.fromByte(fis.read());
+            assert(privateType == DataType.PRIVATE_KEY);
+            int privateLenght = NumberUtils.intFromInputStream(fis);
+            byte[] privateKeyData = new byte[privateLenght];
+            fis.read(privateKeyData);
+            privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyData));
+
+            DataType publicType = DataType.fromByte(fis.read());
+            assert(publicType == DataType.PUBLIC_KEY);
+            int publicLenght = NumberUtils.intFromInputStream(fis);
+            byte[] publicKeyData = new byte[publicLenght];
+            fis.read(publicKeyData);
+            publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyData));
+
+        } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
     }
 
     private void generateKeyPair() throws GeneralSecurityException {
@@ -82,7 +117,6 @@ public class RSA {
 
     public void saveKeyInFile(File file) {
         try (FileOutputStream fos = new FileOutputStream(file)) {
-            byte[] privateKeyEncoded = privateKey.getEncoded();
             fos.write(DataType.OBJECT_NAME.getNumber());
             byte[] nameBytes = name.getBytes("UTF-8");
             if (nameBytes.length < 128) {
@@ -102,6 +136,8 @@ public class RSA {
                 fos.write(127);
                 fos.write(commentBytes, 0, 127);
             }
+            
+            byte[] privateKeyEncoded = privateKey.getEncoded();
             fos.write(DataType.PRIVATE_KEY.getNumber());
             fos.write(NumberUtils.intToByteArray(privateKeyEncoded.length));
             fos.write(privateKeyEncoded);
@@ -126,19 +162,6 @@ public class RSA {
         }
     }
 
-    public static RSA loadKeyFromFile(File file) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] data = new byte[fis.available()];
-            fis.read(data);
-            RSA rsa = new RSA();
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
-            rsa.privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(data));
-            return rsa;
-        } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 
     public byte[] encrypt(byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
@@ -161,5 +184,9 @@ public class RSA {
         } else {
             return "No Name";
         }
+    }
+
+    public byte[] getPublicKeyEncoded() {
+        return publicKey.getEncoded();
     }
 }
