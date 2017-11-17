@@ -51,8 +51,9 @@ public class AES {
             Logger.getLogger(AES.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    public AES(byte[] keyBytes){
-        assert(keyBytes.length == 16);
+
+    public AES(byte[] keyBytes) {
+        assert (keyBytes.length == 16);
         this.keyBytes = keyBytes;
         key = new SecretKeySpec(keyBytes, "AES");
         try {
@@ -76,8 +77,8 @@ public class AES {
         cipher.init(Cipher.DECRYPT_MODE, key, params);
         return cipher.doFinal(encryptedData.getData(), 0, encryptedData.getData().length);
     }
-    
-    public byte[] getKey(){
+
+    public byte[] getKey() {
         return Arrays.clone(this.keyBytes);
     }
 }

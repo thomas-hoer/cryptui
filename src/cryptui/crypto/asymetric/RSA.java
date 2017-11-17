@@ -16,16 +16,15 @@
 package cryptui.crypto.asymetric;
 
 import cryptui.DataType;
+import cryptui.crypto.hash.SHA3Hash;
+import cryptui.util.Base64Util;
 import cryptui.util.NumberUtils;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -74,28 +73,28 @@ public class RSA {
 
             //TODO: Remove duplication
             DataType nameType = DataType.fromByte(fis.read());
-            assert(nameType == DataType.OBJECT_NAME);
+            assert (nameType == DataType.OBJECT_NAME);
             int nameLenght = fis.read();
             byte[] nameBytes = new byte[nameLenght];
             fis.read(nameBytes);
             name = new String(nameBytes, "UTF-8");
 
             DataType commentType = DataType.fromByte(fis.read());
-            assert(commentType == DataType.DESCRIPTION_SHORT);
+            assert (commentType == DataType.DESCRIPTION_SHORT);
             int commentLenght = fis.read();
             byte[] commentBytes = new byte[commentLenght];
             fis.read(commentBytes);
             comment = new String(commentBytes, "UTF-8");
-            
+
             DataType privateType = DataType.fromByte(fis.read());
-            assert(privateType == DataType.PRIVATE_KEY);
+            assert (privateType == DataType.PRIVATE_KEY);
             int privateLenght = NumberUtils.intFromInputStream(fis);
             byte[] privateKeyData = new byte[privateLenght];
             fis.read(privateKeyData);
             privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyData));
 
             DataType publicType = DataType.fromByte(fis.read());
-            assert(publicType == DataType.PUBLIC_KEY);
+            assert (publicType == DataType.PUBLIC_KEY);
             int publicLenght = NumberUtils.intFromInputStream(fis);
             byte[] publicKeyData = new byte[publicLenght];
             fis.read(publicKeyData);
@@ -136,7 +135,7 @@ public class RSA {
                 fos.write(127);
                 fos.write(commentBytes, 0, 127);
             }
-            
+
             byte[] privateKeyEncoded = privateKey.getEncoded();
             fos.write(DataType.PRIVATE_KEY.getNumber());
             fos.write(NumberUtils.intToByteArray(privateKeyEncoded.length));
@@ -161,7 +160,6 @@ public class RSA {
             e.printStackTrace();
         }
     }
-
 
     public byte[] encrypt(byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {

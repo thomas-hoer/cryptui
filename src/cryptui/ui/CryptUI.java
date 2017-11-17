@@ -24,6 +24,7 @@ import cryptui.util.Base64Util;
 import cryptui.util.NumberUtils;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +32,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,7 +51,7 @@ import org.apache.commons.io.IOUtils;
 public class CryptUI extends javax.swing.JFrame {
 
     private static File HOME_DIRECTORY;
-    private static Map<String, RSA> keyMap;
+    private static Map<String, RSA> keyMap = new HashMap<>();
     private final DefaultListModel list;
 
     /**
@@ -175,21 +177,10 @@ public class CryptUI extends javax.swing.JFrame {
 
         newKeyCommentLabel.setText("Comment");
 
-        newKeyName.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                newKeyNameActionPerformed(evt);
-            }
-        });
-
         newKeyTypeLabel.setText("Type");
 
         newKeyTypeRadioRSA.setSelected(true);
         newKeyTypeRadioRSA.setText("RSA");
-        newKeyTypeRadioRSA.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                newKeyTypeRadioRSAActionPerformed(evt);
-            }
-        });
 
         newKeyStrenghtLabel.setText("Strenght");
 
@@ -246,6 +237,11 @@ public class CryptUI extends javax.swing.JFrame {
         });
 
         decryptFileButton.setText("Decrypt File");
+        decryptFileButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                decryptFileButtonMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -307,21 +303,12 @@ public class CryptUI extends javax.swing.JFrame {
             newKeyComment.setText("");
             File keysDir = getKeysDirectory();
             File newKey = new File(keysDir.getAbsolutePath() + "/" + rsa.hashCode() + ".key");
-
             rsa.saveKeyInFile(newKey);
             list.addElement(rsa);
         } catch (GeneralSecurityException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }//GEN-LAST:event_newKeyMouseClicked
-
-    private void newKeyTypeRadioRSAActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newKeyTypeRadioRSAActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_newKeyTypeRadioRSAActionPerformed
-
-    private void newKeyNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_newKeyNameActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_newKeyNameActionPerformed
 
     private void encryptFileButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_encryptFileButtonMouseClicked
         JFileChooser fc = new JFileChooser();
@@ -340,7 +327,6 @@ public class CryptUI extends javax.swing.JFrame {
                     File saveFile = fc2.getSelectedFile();
                     try (FileOutputStream fos = new FileOutputStream(saveFile)) {
                         fos.write(DataType.RSA_ENCRYPTED_DATA.getNumber());
-                        System.out.println(Base64Util.encodeToString(aes.getKey()));
                         final byte[] rsaEncryptKey = rsa.encrypt(aes.getKey());
 
                         fos.write(NumberUtils.intToByteArray(rsaEncryptKey.length + 64));
@@ -348,7 +334,8 @@ public class CryptUI extends javax.swing.JFrame {
                         fos.write(rsaEncryptKey);
 
                         fos.write(DataType.AES_ENCRYPTED_DATA.getNumber());
-                        fos.write(NumberUtils.intToByteArray(encryptedBytes.getData().length));
+                        fos.write(NumberUtils.intToByteArray(encryptedBytes.getData().length + 12));
+                        fos.write(encryptedBytes.getIv());
                         fos.write(encryptedBytes.getData());
                     } catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
                         Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -361,6 +348,66 @@ public class CryptUI extends javax.swing.JFrame {
         }
 
     }//GEN-LAST:event_encryptFileButtonMouseClicked
+
+    private void decryptFileButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_decryptFileButtonMouseClicked
+        JFileChooser fc = new JFileChooser();
+        int returnVal = fc.showOpenDialog(this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File openFile = fc.getSelectedFile();
+            try (FileInputStream fis = new FileInputStream(openFile)) {
+                DataType rsaType = DataType.fromByte(fis.read());
+                assert (rsaType == DataType.RSA_ENCRYPTED_DATA);
+                int encryptedKeyLenght = NumberUtils.intFromInputStream(fis);
+                byte[] encryptedKeyHash = new byte[64];
+                fis.read(encryptedKeyHash);
+                byte[] encryptedKeyData = new byte[encryptedKeyLenght - 64];
+                fis.read(encryptedKeyData);
+                final String keyHashBase64 = Base64Util.encodeToString(encryptedKeyHash);
+                RSA rsa = keyMap.get(keyHashBase64);;
+                byte[] aesKey = rsa.decrypt(encryptedKeyData);
+
+                DataType aesType = DataType.fromByte(fis.read());
+                assert (aesType == DataType.AES_ENCRYPTED_DATA);
+                int encryptedDataLenght = NumberUtils.intFromInputStream(fis);
+                byte[] iv = new byte[12];
+                fis.read(iv);
+                byte[] encryptedData = new byte[encryptedDataLenght - 12];
+                fis.read(encryptedData);
+                AES aes = new AES(aesKey);
+                AESEncryptedData aesEncryptedData = new AESEncryptedData(iv, encryptedData);
+                byte[] decryptedData = aes.decrypt(aesEncryptedData);
+
+                JFileChooser fc2 = new JFileChooser();
+                int returnVal2 = fc2.showSaveDialog(this);
+                if (returnVal2 == JFileChooser.APPROVE_OPTION) {
+                    File saveFile = fc2.getSelectedFile();
+                    try (FileOutputStream fos = new FileOutputStream(saveFile)) {
+                        fos.write(decryptedData);
+                    }
+                }
+
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NoSuchAlgorithmException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NoSuchPaddingException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (InvalidKeyException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IllegalBlockSizeException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (BadPaddingException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (InvalidAlgorithmParameterException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }//GEN-LAST:event_decryptFileButtonMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton decryptFileButton;
@@ -385,6 +432,7 @@ public class CryptUI extends javax.swing.JFrame {
     private void loadKey(File file) {
         RSA rsa = new RSA(file);
         list.addElement(rsa);
-        keyMap.put(Base64Util.encodeToString(rsa.getPublicKeyEncoded()), rsa);
+        final String encodeToString = Base64Util.encodeToString(SHA3Hash.hash(rsa.getPublicKeyEncoded()));
+        keyMap.put(encodeToString, rsa);
     }
 }
