@@ -15,6 +15,13 @@
  */
 package cryptui.crypto.symetric;
 
+import cryptui.DataType;
+import static cryptui.util.Assert.assertTrue;
+import cryptui.util.NumberUtils;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 /**
  *
  * @author thomas-hoer
@@ -25,6 +32,7 @@ public class AESEncryptedData {
     private final byte[] data;
 
     public AESEncryptedData(byte[] iv, byte[] data) {
+        assertTrue(iv.length == AES.IV_LENGTH);
         this.iv = iv;
         this.data = data;
     }
@@ -37,4 +45,21 @@ public class AESEncryptedData {
         return data;
     }
 
+    public void writeToOutputStream(OutputStream fos) throws IOException {
+        fos.write(DataType.AES_ENCRYPTED_DATA.getNumber());
+        fos.write(iv);
+        fos.write(NumberUtils.intToByteArray(data.length));
+        fos.write(data);
+    }
+
+    public static AESEncryptedData fromInputStream(InputStream is) throws IOException {
+        DataType aesType = DataType.fromByte(is.read());
+        assertTrue(aesType == DataType.AES_ENCRYPTED_DATA);
+        byte[] iv = new byte[AES.IV_LENGTH];
+        is.read(iv);
+        int encryptedDataLenght = NumberUtils.intFromInputStream(is);
+        byte[] encryptedData = new byte[encryptedDataLenght];
+        is.read(encryptedData);
+        return new AESEncryptedData(iv, encryptedData);
+    }
 }

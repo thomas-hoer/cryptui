@@ -15,39 +15,30 @@
  */
 package cryptui.util;
 
-import java.io.ByteArrayInputStream;
+import cryptui.DataType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.security.SecureRandom;
-import java.util.zip.GZIPInputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
-import org.apache.commons.io.IOUtils;
 
 public class GZip {
 
-    public void load(OutputStream out) throws IOException {
-        GZIPOutputStream gzip = new GZIPOutputStream(out);
+    public static byte[] compress(byte[] input) {
+        ByteArrayOutputStream obj = new ByteArrayOutputStream();
+        obj.write(DataType.GZIP.getNumber());
+        try (GZIPOutputStream gzip = new GZIPOutputStream(obj)) {
+            gzip.write(input);
+            gzip.close();
+            byte[] compressed = obj.toByteArray();
+            System.out.println("Compressed from " + input.length + " to " + compressed.length + " ( " + (compressed.length * 100 / input.length) + "%)");
+            if (compressed.length < input.length) {
+                return compressed;
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(GZip.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return input;
     }
-    
-    public static final int DATA_SIZE = 1024*1024;
-    
-    public static void main(String[] args) throws IOException{
-        byte[] data = new byte[DATA_SIZE];
-        SecureRandom random = new SecureRandom();
-        random.nextBytes(data);
-        
-        ByteArrayOutputStream obj=new ByteArrayOutputStream();
-         GZIPOutputStream gzip = new GZIPOutputStream(obj);
-        gzip.write(data);
-        gzip.close();
-        System.out.println(data.length);
-        byte[] compressed = obj.toByteArray();
-        System.out.println(compressed.length);
-        
-        ByteArrayInputStream bais = new ByteArrayInputStream(compressed);
-        GZIPInputStream gis = new GZIPInputStream(bais);
-        byte[] bytes = IOUtils.toByteArray(gis);
-        System.out.println(bytes.length);
-    }
+
 }

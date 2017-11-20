@@ -17,104 +17,86 @@ package cryptui.crypto.asymetric;
 
 import cryptui.DataType;
 import cryptui.crypto.hash.SHA3Hash;
-import cryptui.util.Base64Util;
+import static cryptui.util.Assert.assertTrue;
 import cryptui.util.NumberUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import org.apache.commons.lang3.StringUtils;
 
-public class RSA {
+public class RSAKeyPair extends RSABase {
 
-    private static Cipher cipher;
-
-    static {
-        try {
-            cipher = Cipher.getInstance("RSA/None/OAEPWithSHA3-512AndMGF1Padding");
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
-            Logger.getLogger(RSA.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
     private final String name;
     private final String comment;
-    private PrivateKey privateKey;
-    private PublicKey publicKey;
+    private final PrivateKey privateKey;
+    private final PublicKey publicKey;
+    private final byte[] salt;
 
-    public RSA(String name, String comment) throws GeneralSecurityException {
+    public RSAKeyPair(String name, String comment) throws RSAException {
         this.name = name;
         this.comment = comment;
-        generateKeyPair();
+        KeyPair keyPair = generateKeyPair();
+        this.privateKey = keyPair.getPrivate();
+        this.publicKey = keyPair.getPublic();
+        this.salt = generateSalt();
+        getHash();
     }
 
-    public RSA(File file) {
+    public RSAKeyPair(File file) throws RSAException {
         try (FileInputStream fis = new FileInputStream(file)) {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
 
             //TODO: Remove duplication
             DataType nameType = DataType.fromByte(fis.read());
-            assert (nameType == DataType.OBJECT_NAME);
+            assertTrue(nameType == DataType.OBJECT_NAME);
             int nameLenght = fis.read();
             byte[] nameBytes = new byte[nameLenght];
             fis.read(nameBytes);
             name = new String(nameBytes, "UTF-8");
 
             DataType commentType = DataType.fromByte(fis.read());
-            assert (commentType == DataType.DESCRIPTION_SHORT);
+            assertTrue(commentType == DataType.DESCRIPTION_SHORT);
             int commentLenght = fis.read();
             byte[] commentBytes = new byte[commentLenght];
             fis.read(commentBytes);
             comment = new String(commentBytes, "UTF-8");
 
             DataType privateType = DataType.fromByte(fis.read());
-            assert (privateType == DataType.PRIVATE_KEY);
+            assertTrue(privateType == DataType.PRIVATE_KEY);
             int privateLenght = NumberUtils.intFromInputStream(fis);
             byte[] privateKeyData = new byte[privateLenght];
             fis.read(privateKeyData);
             privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyData));
 
             DataType publicType = DataType.fromByte(fis.read());
-            assert (publicType == DataType.PUBLIC_KEY);
+            assertTrue(publicType == DataType.PUBLIC_KEY);
             int publicLenght = NumberUtils.intFromInputStream(fis);
             byte[] publicKeyData = new byte[publicLenght];
             fis.read(publicKeyData);
+            this.salt = new byte[RSABase.SALT_LENGTH];
+            fis.read(salt);
             publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyData));
 
         } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+            throw new RSAException(e);
         }
     }
 
-    private void generateKeyPair() throws GeneralSecurityException {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(new RSAKeyGenParameterSpec(4096, RSAKeyGenParameterSpec.F4));
-        KeyPair keyPair = keyPairGenerator.generateKeyPair();
-        privateKey = keyPair.getPrivate();
-        publicKey = keyPair.getPublic();
-    }
-
-    public void saveKeyInFile(File file) {
+    public void saveKeyInFile(File file) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(DataType.OBJECT_NAME.getNumber());
             byte[] nameBytes = name.getBytes("UTF-8");
@@ -144,33 +126,21 @@ public class RSA {
             fos.write(DataType.PUBLIC_KEY.getNumber());
             fos.write(NumberUtils.intToByteArray(publicKeyEncoded.length));
             fos.write(publicKeyEncoded);
-        } catch (IOException e) {
-            e.printStackTrace();
+            fos.write(salt);
         }
     }
 
-    private void loadPublicKeyFromFile(File file) {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] data = new byte[fis.available()];
-            fis.read(data);
-
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
-            publicKey = keyFactory.generatePublic(new PKCS8EncodedKeySpec(data));
-        } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-            e.printStackTrace();
+    public RSAEncryptedData encrypt(byte[] data) throws RSAException {
+        try {
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            return new RSAEncryptedData(cipher.doFinal(data), getHash());
+        } catch (IllegalBlockSizeException | InvalidKeyException | BadPaddingException ex) {
+            throw new RSAException(ex);
         }
     }
 
-    public byte[] encrypt(byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        return cipher.doFinal(data);
-    }
-
-    public byte[] decrypt(byte[] data) throws NoSuchAlgorithmException, NoSuchPaddingException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        return cipher.doFinal(data);
+    public byte[] decrypt(RSAEncryptedData data) throws RSAException {
+        return decrpyt(privateKey, data);
     }
 
     @Override
@@ -184,7 +154,8 @@ public class RSA {
         }
     }
 
-    public byte[] getPublicKeyEncoded() {
-        return publicKey.getEncoded();
+    @Override
+    public byte[] getHash() {
+        return SHA3Hash.hash(publicKey.getEncoded(), salt);
     }
 }

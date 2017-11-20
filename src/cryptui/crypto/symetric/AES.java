@@ -36,6 +36,9 @@ import org.bouncycastle.util.Arrays;
  */
 public class AES {
 
+    public static final int IV_LENGTH = 12;
+    public static final int KEY_SIZE_BITS = 128;
+
     private Cipher cipher;
     private byte[] keyBytes;
     private Key key;
@@ -63,19 +66,27 @@ public class AES {
         }
     }
 
-    public AESEncryptedData encrypt(byte[] src) throws InvalidKeyException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
-        byte[] iv = new byte[12];
-        sr.nextBytes(iv);
-        GCMParameterSpec params = new GCMParameterSpec(128, iv, 0, 12);
-        cipher.init(Cipher.ENCRYPT_MODE, key, params);
-        byte[] cipherText = cipher.doFinal(src);
-        return new AESEncryptedData(iv, cipherText);
+    public AESEncryptedData encrypt(byte[] src) throws AESException {
+        try {
+            byte[] iv = new byte[IV_LENGTH];
+            sr.nextBytes(iv);
+            GCMParameterSpec params = new GCMParameterSpec(KEY_SIZE_BITS, iv, 0, IV_LENGTH);
+            cipher.init(Cipher.ENCRYPT_MODE, key, params);
+            byte[] cipherText = cipher.doFinal(src);
+            return new AESEncryptedData(iv, cipherText);
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException ex) {
+            throw new AESException(ex);
+        }
     }
 
-    public byte[] decrypt(AESEncryptedData encryptedData) throws Exception {
-        GCMParameterSpec params = new GCMParameterSpec(128, encryptedData.getIv(), 0, 12);
-        cipher.init(Cipher.DECRYPT_MODE, key, params);
-        return cipher.doFinal(encryptedData.getData(), 0, encryptedData.getData().length);
+    public byte[] decrypt(AESEncryptedData encryptedData) throws AESException {
+        try {
+            GCMParameterSpec params = new GCMParameterSpec(KEY_SIZE_BITS, encryptedData.getIv(), 0, IV_LENGTH);
+            cipher.init(Cipher.DECRYPT_MODE, key, params);
+            return cipher.doFinal(encryptedData.getData(), 0, encryptedData.getData().length);
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException | IllegalBlockSizeException | BadPaddingException ex) {
+            throw new AESException(ex);
+        }
     }
 
     public byte[] getKey() {

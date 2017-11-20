@@ -13,25 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cryptui.crypto.hash;
+package cryptui.util;
 
-import org.bouncycastle.jcajce.provider.digest.SHA3;
-import org.bouncycastle.util.encoders.Hex;
+public class Assert {
 
-/**
- *
- * @author thomas-hoer
- */
-public class SHA3Hash {
-
-    public static final int HASH_SIZE = 64;
-
-    public static byte[] hash(byte[] input, byte[] salt) {
-        SHA3.DigestSHA3 digestSHA3 = new SHA3.Digest512();
-        digestSHA3.update(input);
-        byte[] digest = digestSHA3.digest(salt);
-        System.out.println("SHA3-512 = " + Hex.toHexString(digest));
-        return digest;
+    public static void assertTrue(boolean bool) {
+        if (!bool) {
+            throw new AssertionException();
+        }
     }
-
 }

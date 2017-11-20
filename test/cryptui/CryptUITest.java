@@ -15,16 +15,17 @@
  */
 package cryptui;
 
-import cryptui.crypto.asymetric.RSA;
+import cryptui.crypto.asymetric.RSAEncryptedData;
+import cryptui.crypto.asymetric.RSAException;
+import cryptui.crypto.asymetric.RSAKeyPair;
 import cryptui.crypto.symetric.AES;
 import cryptui.crypto.symetric.AESEncryptedData;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class CryptUITest {
 
@@ -36,20 +37,20 @@ public class CryptUITest {
     }
 
     @Test
-    public void encryptRSATest() throws GeneralSecurityException {
-        RSA rsa = new RSA("","");
+    public void encryptRSATest() throws GeneralSecurityException, RSAException {
+        RSAKeyPair rsa = new RSAKeyPair("Test", "Test");
 
-        byte[] data1 = rsa.encrypt(TEST.getBytes());
+        RSAEncryptedData data1 = rsa.encrypt(TEST.getBytes());
         byte[] data2 = rsa.decrypt(data1);
-        assertEquals(TEST,new String(data2));
+        assertEquals(TEST, new String(data2));
 
     }
 
     @Test
-    public void AESTest() throws Exception{
+    public void AESTest() throws Exception {
         AES aes = new AES();
         AESEncryptedData encryptedData = aes.encrypt(TEST.getBytes());
-        byte[]data = aes.decrypt(encryptedData);
-        assertEquals(TEST,new String(data));
+        byte[] data = aes.decrypt(encryptedData);
+        assertEquals(TEST, new String(data));
     }
 }

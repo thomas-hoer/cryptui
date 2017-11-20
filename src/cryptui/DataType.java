@@ -25,7 +25,8 @@ public enum DataType {
     DESCRIPTION_SHORT(4),
     AES_ENCRYPTED_DATA(5),
     RSA_ENCRYPTED_DATA(6),
-    AES_KEY(7);
+    AES_KEY(7),
+    GZIP(8);
     
     private static Map<Integer,DataType> numberToType;
     static{
