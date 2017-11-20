@@ -91,6 +91,9 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="Import Key"/>
       </Properties>
+      <Events>
+        <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="importKeyButtonMouseClicked"/>
+      </Events>
     </Component>
     <Container class="javax.swing.JScrollPane" name="jScrollPane1">
       <AuxValues>
@@ -201,6 +204,9 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="Export Public Key"/>
       </Properties>
+      <Events>
+        <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="exportPublicKeyButtonMouseClicked"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JButton" name="encryptFileButton">
       <Properties>

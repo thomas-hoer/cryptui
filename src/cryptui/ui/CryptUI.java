@@ -15,9 +15,11 @@
  */
 package cryptui.ui;
 
+import cryptui.crypto.asymetric.IEncrypter;
 import cryptui.crypto.asymetric.RSAEncryptedData;
 import cryptui.crypto.asymetric.RSAException;
 import cryptui.crypto.asymetric.RSAKeyPair;
+import cryptui.crypto.asymetric.RSAPublicKey;
 import cryptui.crypto.symetric.AES;
 import cryptui.crypto.symetric.AESEncryptedData;
 import cryptui.crypto.symetric.AESException;
@@ -160,6 +162,11 @@ public class CryptUI extends javax.swing.JFrame {
         });
 
         importKeyButton.setText("Import Key");
+        importKeyButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                importKeyButtonMouseClicked(evt);
+            }
+        });
 
         jScrollPane1.setViewportView(keyList);
 
@@ -218,6 +225,11 @@ public class CryptUI extends javax.swing.JFrame {
         );
 
         exportPublicKeyButton.setText("Export Public Key");
+        exportPublicKeyButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                exportPublicKeyButtonMouseClicked(evt);
+            }
+        });
 
         encryptFileButton.setText("Encrypt File");
         encryptFileButton.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -314,7 +326,7 @@ public class CryptUI extends javax.swing.JFrame {
                 return;
             }
             AES aes = new AES();
-            RSAKeyPair rsa = (RSAKeyPair) list.getElementAt(keyList.getSelectedIndex());
+            IEncrypter rsa = (IEncrypter) list.getElementAt(keyList.getSelectedIndex());
             AESEncryptedData encryptedBytes;
             RSAEncryptedData rsaEncryptKey;
             try {
@@ -373,6 +385,36 @@ public class CryptUI extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_decryptFileButtonMouseClicked
+
+    private void exportPublicKeyButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_exportPublicKeyButtonMouseClicked
+        RSAKeyPair rsa = (RSAKeyPair) list.getElementAt(keyList.getSelectedIndex());
+        RSAPublicKey publicKey = rsa.getPublicKey();
+        JFileChooser fileChooser = new JFileChooser();
+        int returnVal2 = fileChooser.showSaveDialog(this);
+        if (returnVal2 == JFileChooser.APPROVE_OPTION) {
+            File saveFile = fileChooser.getSelectedFile();
+            try {
+                publicKey.saveKeyInFile(saveFile);
+            } catch (IOException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }//GEN-LAST:event_exportPublicKeyButtonMouseClicked
+
+    private void importKeyButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_importKeyButtonMouseClicked
+        JFileChooser fc = new JFileChooser();
+        int returnVal = fc.showOpenDialog(this);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            try {
+                File openFile = fc.getSelectedFile();
+                RSAPublicKey publicKey = new RSAPublicKey(openFile);
+                list.addElement(publicKey);
+            } catch (RSAException ex) {
+                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }//GEN-LAST:event_importKeyButtonMouseClicked
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton decryptFileButton;

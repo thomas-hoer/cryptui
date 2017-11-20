@@ -38,7 +38,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import org.apache.commons.lang3.StringUtils;
 
-public class RSAKeyPair extends RSABase {
+public class RSAKeyPair extends RSABase implements IEncrypter {
 
     private final String name;
     private final String comment;
@@ -53,7 +53,6 @@ public class RSAKeyPair extends RSABase {
         this.privateKey = keyPair.getPrivate();
         this.publicKey = keyPair.getPublic();
         this.salt = generateSalt();
-        getHash();
     }
 
     public RSAKeyPair(File file) throws RSAException {
@@ -94,6 +93,10 @@ public class RSAKeyPair extends RSABase {
         } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
             throw new RSAException(e);
         }
+    }
+
+    public RSAPublicKey getPublicKey() {
+        return new RSAPublicKey(publicKey, name, salt);
     }
 
     public void saveKeyInFile(File file) throws IOException {
