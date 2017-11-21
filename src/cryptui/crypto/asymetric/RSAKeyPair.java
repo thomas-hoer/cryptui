@@ -47,12 +47,12 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
     private final byte[] salt;
 
     public RSAKeyPair(String name, String comment) throws RSAException {
-        this.name = name;
         this.comment = comment;
         KeyPair keyPair = generateKeyPair();
         this.privateKey = keyPair.getPrivate();
         this.publicKey = keyPair.getPublic();
         this.salt = generateSalt();
+        this.name = generateName(name);
     }
 
     public RSAKeyPair(File file) throws RSAException {
@@ -65,7 +65,6 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
             int nameLenght = fis.read();
             byte[] nameBytes = new byte[nameLenght];
             fis.read(nameBytes);
-            name = new String(nameBytes, "UTF-8");
 
             DataType commentType = DataType.fromByte(fis.read());
             assertTrue(commentType == DataType.DESCRIPTION_SHORT);
@@ -90,6 +89,7 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
             fis.read(salt);
             publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyData));
 
+            name = generateName(new String(nameBytes, "UTF-8"));
         } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
             throw new RSAException(e);
         }

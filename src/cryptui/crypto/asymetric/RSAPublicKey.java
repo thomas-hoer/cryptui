@@ -38,8 +38,8 @@ public class RSAPublicKey extends RSABase implements IEncrypter {
 
     public RSAPublicKey(PublicKey publicKey, String name, byte[] salt) {
         this.publicKey = publicKey;
-        this.name = name;
         this.salt = salt;
+        this.name = generateName(name);
     }
 
     public RSAPublicKey(File file) throws RSAException {
@@ -88,17 +88,18 @@ public class RSAPublicKey extends RSABase implements IEncrypter {
         }
     }
 
+    @Override
     public RSAEncryptedData encrypt(byte[] data) throws RSAException {
         return encrypt(publicKey, data);
     }
 
     @Override
-    public byte[] getHash() {
+    public final byte[] getHash() {
         return SHA3Hash.hash(publicKey.getEncoded(), salt);
     }
 
     @Override
     public String toString() {
-        return "(p) " + name;
+        return name;
     }
 }

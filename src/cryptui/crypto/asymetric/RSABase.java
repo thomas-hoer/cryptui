@@ -15,6 +15,7 @@
  */
 package cryptui.crypto.asymetric;
 
+import cryptui.util.Base64Util;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -29,6 +30,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import org.apache.commons.lang3.StringUtils;
 
 public abstract class RSABase {
 
@@ -79,6 +81,14 @@ public abstract class RSABase {
         byte[] salt = new byte[SALT_LENGTH];
         new SecureRandom().nextBytes(salt);
         return salt;
+    }
+
+    protected final String generateName(String suggestedName) {
+        if (StringUtils.isEmpty(suggestedName)) {
+            return Base64Util.encodeToString(getHash()).substring(0, 8);
+        } else {
+            return suggestedName;
+        }
     }
 
     public abstract byte[] getHash();
