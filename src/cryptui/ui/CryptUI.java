@@ -23,6 +23,7 @@ import cryptui.crypto.asymetric.RSAPublicKey;
 import cryptui.crypto.symetric.AES;
 import cryptui.crypto.symetric.AESEncryptedData;
 import cryptui.crypto.symetric.AESException;
+import cryptui.ui.list.KeyListRenderer;
 import cryptui.util.AssertionException;
 import cryptui.util.Base64Util;
 import java.io.File;
@@ -56,6 +57,7 @@ public class CryptUI extends javax.swing.JFrame {
         keyList.setModel(list);
         File home = getHomeDirectory();
         File keyDir = getKeysDirectory(home);
+        keyList.setCellRenderer(new KeyListRenderer());
         for (File file : keyDir.listFiles()) {
             if (file.isFile()) {
                 loadKey(file);
