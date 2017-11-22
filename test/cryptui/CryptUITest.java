@@ -53,4 +53,5 @@ public class CryptUITest {
         byte[] data = aes.decrypt(encryptedData);
         assertEquals(TEST, new String(data));
     }
+
 }

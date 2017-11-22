@@ -15,15 +15,19 @@
  */
 package cryptui.ui;
 
+import cryptui.DataType;
 import cryptui.crypto.asymetric.IEncrypter;
+import cryptui.crypto.asymetric.RSABase;
 import cryptui.crypto.asymetric.RSAEncryptedData;
 import cryptui.crypto.asymetric.RSAException;
 import cryptui.crypto.asymetric.RSAKeyPair;
 import cryptui.crypto.asymetric.RSAPublicKey;
+import cryptui.crypto.hash.SHA3Hash;
 import cryptui.crypto.symetric.AES;
 import cryptui.crypto.symetric.AESEncryptedData;
 import cryptui.crypto.symetric.AESException;
 import cryptui.ui.list.KeyListRenderer;
+import static cryptui.util.Assert.assertTrue;
 import cryptui.util.AssertionException;
 import cryptui.util.Base64Util;
 import java.io.File;
@@ -31,6 +35,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -40,12 +45,15 @@ import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class CryptUI extends javax.swing.JFrame {
 
     private static File HOME_DIRECTORY;
     private static final Map<String, RSAKeyPair> KEY_MAP = new HashMap<>();
+    private static final Map<String, IEncrypter> PUBLIC_KEY_MAP = new HashMap<>();
     private final DefaultListModel list;
+    private RSAKeyPair signingKeyPair;
 
     /**
      * Creates new form CryptUI
@@ -145,6 +153,7 @@ public class CryptUI extends javax.swing.JFrame {
         exportPublicKeyButton = new javax.swing.JButton();
         encryptFileButton = new javax.swing.JButton();
         decryptFileButton = new javax.swing.JButton();
+        usedKey = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Crypt UI");
@@ -247,17 +256,22 @@ public class CryptUI extends javax.swing.JFrame {
             }
         });
 
+        usedKey.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cryptui/ui/list/key_pair.png"))); // NOI18N
+        usedKey.setText("key");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                        .addComponent(loadKeyButton, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(newKeyButton)))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                            .addComponent(loadKeyButton, javax.swing.GroupLayout.PREFERRED_SIZE, 99, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(newKeyButton)))
+                    .addComponent(usedKey))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(layout.createSequentialGroup()
@@ -283,8 +297,12 @@ public class CryptUI extends javax.swing.JFrame {
                     .addComponent(decryptFileButton))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 271, Short.MAX_VALUE)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(usedKey)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 250, javax.swing.GroupLayout.PREFERRED_SIZE))))
         );
 
         pack();
@@ -320,7 +338,7 @@ public class CryptUI extends javax.swing.JFrame {
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File openFile = fc.getSelectedFile();
-            byte[] bytes = null;
+            byte[] bytes;
             try (FileInputStream fis = new FileInputStream(openFile)) {
                 bytes = IOUtils.toByteArray(fis);
             } catch (IOException ex) {
@@ -332,7 +350,7 @@ public class CryptUI extends javax.swing.JFrame {
             AESEncryptedData encryptedBytes;
             RSAEncryptedData rsaEncryptKey;
             try {
-                encryptedBytes = aes.encrypt(bytes);
+                encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, rsa.getHash()), bytes));
                 rsaEncryptKey = rsa.encrypt(aes.getKey());
             } catch (RSAException | AESException ex) {
                 Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -343,6 +361,8 @@ public class CryptUI extends javax.swing.JFrame {
             if (returnVal2 == JFileChooser.APPROVE_OPTION) {
                 File saveFile = fc2.getSelectedFile();
                 try (FileOutputStream fos = new FileOutputStream(saveFile)) {
+                    fos.write(DataType.SENDER_HASH.getNumber());
+                    fos.write(signingKeyPair.getHash());
                     rsaEncryptKey.writeToOutputStream(fos);
                     encryptedBytes.writeToOutputStream(fos);
                 } catch (IOException ex) {
@@ -361,6 +381,11 @@ public class CryptUI extends javax.swing.JFrame {
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File openFile = fc.getSelectedFile();
             try (FileInputStream fis = new FileInputStream(openFile)) {
+                DataType rsaType = DataType.fromByte(fis.read());
+                assertTrue(rsaType == DataType.SENDER_HASH);
+                byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
+                fis.read(senderKeyHash);
+
                 RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
                 RSAKeyPair rsa = KEY_MAP.get(encryptedAesKey.getKeyHash());
                 if (rsa == null) {
@@ -372,13 +397,17 @@ public class CryptUI extends javax.swing.JFrame {
                 AESEncryptedData aesEncryptedData = AESEncryptedData.fromInputStream(fis);
                 AES aes = new AES(aesKey);
                 byte[] decryptedData = aes.decrypt(aesEncryptedData);
+                byte[] sign = Arrays.copyOfRange(decryptedData, 0, RSABase.SIGN_LENGTH);
+                byte[] decryptedUseData = Arrays.copyOfRange(decryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
+                IEncrypter sender = PUBLIC_KEY_MAP.get(Base64Util.encodeToString(senderKeyHash));
+                assertTrue(sender.verifySignature(sign, decryptedUseData, rsa.getHash()));
 
                 JFileChooser fc2 = new JFileChooser();
                 int returnVal2 = fc2.showSaveDialog(this);
                 if (returnVal2 == JFileChooser.APPROVE_OPTION) {
                     File saveFile = fc2.getSelectedFile();
                     try (FileOutputStream fos = new FileOutputStream(saveFile)) {
-                        fos.write(decryptedData);
+                        fos.write(decryptedUseData);
                     }
                 }
 
@@ -412,6 +441,8 @@ public class CryptUI extends javax.swing.JFrame {
                 File openFile = fc.getSelectedFile();
                 RSAPublicKey publicKey = new RSAPublicKey(openFile);
                 list.addElement(publicKey);
+                PUBLIC_KEY_MAP.put(Base64Util.encodeToString(publicKey.getHash()), publicKey);
+
             } catch (RSAException ex) {
                 Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -436,14 +467,20 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JRadioButton newKeyStrengthRadio4096;
     private javax.swing.JLabel newKeyTypeLabel;
     private javax.swing.JRadioButton newKeyTypeRadioRSA;
+    private javax.swing.JLabel usedKey;
     // End of variables declaration//GEN-END:variables
 
     private void loadKey(File file) {
         try {
             RSAKeyPair rsa = new RSAKeyPair(file);
+            if (signingKeyPair == null) {
+                signingKeyPair = rsa;
+                usedKey.setText(rsa.toString());
+            }
             list.addElement(rsa);
             final String encodeToString = Base64Util.encodeToString(rsa.getHash());
             KEY_MAP.put(encodeToString, rsa);
+            PUBLIC_KEY_MAP.put(encodeToString, rsa);
         } catch (AssertionException | RSAException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }

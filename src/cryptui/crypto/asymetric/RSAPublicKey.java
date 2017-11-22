@@ -94,6 +94,11 @@ public class RSAPublicKey extends RSABase implements IEncrypter {
     }
 
     @Override
+    public boolean verifySignature(byte[] sign, byte[] dat, byte[] recipient) throws RSAException {
+        return verifySignature(publicKey, sign, dat, recipient);
+    }
+
+    @Override
     public final byte[] getHash() {
         return SHA3Hash.hash(publicKey.getEncoded(), salt);
     }

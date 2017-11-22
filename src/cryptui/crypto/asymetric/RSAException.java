@@ -17,9 +17,14 @@ package cryptui.crypto.asymetric;
 
 public class RSAException extends Exception {
 
-    private Throwable throwable;
+    private Throwable cause;
 
     public RSAException(Throwable cause) {
-        throwable = cause;
+        this.cause = cause;
+    }
+
+    @Override
+    public Throwable getCause() {
+        return cause;
     }
 }

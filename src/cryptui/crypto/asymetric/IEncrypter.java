@@ -19,4 +19,7 @@ public interface IEncrypter {
 
     public RSAEncryptedData encrypt(byte[] data) throws RSAException;
 
+    public byte[] getHash();
+
+    public boolean verifySignature(byte[] sign, byte[] dat, byte[] recipient) throws RSAException;
 }

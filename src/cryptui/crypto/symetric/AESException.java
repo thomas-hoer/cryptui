@@ -17,9 +17,14 @@ package cryptui.crypto.symetric;
 
 public class AESException extends Exception {
 
-    private Throwable cause;
+    private final Throwable cause;
 
     public AESException(Throwable cause) {
         this.cause = cause;
+    }
+
+    @Override
+    public Throwable getCause() {
+        return cause;
     }
 }

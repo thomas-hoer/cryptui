@@ -26,26 +26,29 @@ public enum DataType {
     AES_ENCRYPTED_DATA(5),
     RSA_ENCRYPTED_DATA(6),
     AES_KEY(7),
-    GZIP(8);
-    
-    private static Map<Integer,DataType> numberToType;
-    static{
+    GZIP(8),
+    SENDER_HASH(9);
+
+    private static Map<Integer, DataType> numberToType;
+
+    static {
         numberToType = new HashMap<>();
-        for(DataType dataType : DataType.values()){
-            numberToType.put((int)dataType.getNumber(), dataType);
+        for (DataType dataType : DataType.values()) {
+            numberToType.put((int) dataType.getNumber(), dataType);
         }
     }
     private final byte number;
-    
-    private DataType(int number){
-        this.number =(byte) number;
+
+    private DataType(int number) {
+        this.number = (byte) number;
     }
-    public byte getNumber(){
+
+    public byte getNumber() {
         return number;
     }
-    
-    public static DataType fromByte(int type){
+
+    public static DataType fromByte(int type) {
         return numberToType.get(type);
     }
-    
+
 }

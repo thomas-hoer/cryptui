@@ -30,9 +30,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -133,6 +137,7 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
         }
     }
 
+    @Override
     public RSAEncryptedData encrypt(byte[] data) throws RSAException {
         try {
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
@@ -160,5 +165,24 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
     @Override
     public byte[] getHash() {
         return SHA3Hash.hash(publicKey.getEncoded(), salt);
+    }
+
+    @Override
+    public boolean verifySignature(byte[] sign, byte[] dat, byte[] recipient) throws RSAException {
+        return verifySignature(publicKey, sign, dat, recipient);
+    }
+
+    public byte[] createSignature(byte[] dat, byte[] recipient) throws RSAException {
+        try {
+            Signature signature = Signature.getInstance(RSABase.SIGNATURE_ALGORITHM);
+            signature.initSign(privateKey);
+            signature.update(dat);
+            signature.update(recipient);
+            return signature.sign();
+        } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException ex) {
+            Logger.getLogger(RSAKeyPair.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RSAException(ex);
+        }
+
     }
 }

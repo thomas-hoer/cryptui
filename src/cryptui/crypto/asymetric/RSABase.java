@@ -22,7 +22,10 @@ import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,15 +37,19 @@ import org.apache.commons.lang3.StringUtils;
 
 public abstract class RSABase {
 
+    public static final String CIPHER_ALGORITHM = "RSA/None/OAEPWithSHA3-512AndMGF1Padding";
+    public static final String SIGNATURE_ALGORITHM = "SHA512withRSAandMGF1";
+
     public static final int KEY_LENGHT_BITS = 4096;
     public static final int KEY_LENGHT_BYTES = 512;
     public static final int SALT_LENGTH = 128;
+    public static final int SIGN_LENGTH = 512;
 
     protected static Cipher cipher;
 
     static {
         try {
-            cipher = Cipher.getInstance("RSA/None/OAEPWithSHA3-512AndMGF1Padding");
+            cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
             Logger.getLogger(RSAKeyPair.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -65,6 +72,19 @@ public abstract class RSABase {
             throw new RSAException(ex);
         }
 
+    }
+
+    protected boolean verifySignature(PublicKey publicKey, byte[] sign, byte[] dat, byte[] recipient) throws RSAException {
+        try {
+            Signature signature = Signature.getInstance(SIGNATURE_ALGORITHM);
+            signature.initVerify(publicKey);
+            signature.update(dat);
+            signature.update(recipient);
+            return signature.verify(sign);
+        } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException ex) {
+            Logger.getLogger(RSAKeyPair.class.getName()).log(Level.SEVERE, null, ex);
+            throw new RSAException(ex);
+        }
     }
 
     protected final KeyPair generateKeyPair() throws RSAException {
@@ -92,4 +112,5 @@ public abstract class RSABase {
     }
 
     public abstract byte[] getHash();
+
 }
