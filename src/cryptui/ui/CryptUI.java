@@ -53,7 +53,8 @@ public class CryptUI extends javax.swing.JFrame {
     private static File HOME_DIRECTORY;
     private static final Map<String, RSAKeyPair> KEY_MAP = new HashMap<>();
     private static final Map<String, IEncrypter> PUBLIC_KEY_MAP = new HashMap<>();
-    private final DefaultListModel keyListModel = new DefaultListModel();
+    private final DefaultListModel publicKeyListModel = new DefaultListModel();
+    private final DefaultListModel privateKeyListModel = new DefaultListModel();
     private final DefaultListModel fileListModel = new DefaultListModel();
     private RSAKeyPair signingKeyPair;
 
@@ -63,19 +64,36 @@ public class CryptUI extends javax.swing.JFrame {
     public CryptUI() {
         initComponents();
         setIconImage();
-        keyList.setModel(keyListModel);
+        publicKeyList.setModel(publicKeyListModel);
+        publicKeyList.setCellRenderer(new KeyListRenderer());
+
+        privateKeyList.setModel(privateKeyListModel);
+        privateKeyList.setCellRenderer(new KeyListRenderer());
+        privateKeyList.addListSelectionListener((e) -> {
+            int[] selectedIndices = privateKeyList.getSelectedIndices();
+            if (selectedIndices.length > 1) {
+                privateKeyList.setSelectedIndex(selectedIndices[0]);
+            }
+            signingKeyPair = (RSAKeyPair) privateKeyListModel.get(selectedIndices[0]);
+            usedKey.setText(signingKeyPair.toString());
+        });
+
         fileList.setModel(fileListModel);
         File home = getHomeDirectory();
         File keyDir = getKeysDirectory(home);
-        keyList.setCellRenderer(new KeyListRenderer());
         for (File file : keyDir.listFiles()) {
             if (file.isFile()) {
-                if (loadKey(file)) {
-                    tabbedPane.setSelectedIndex(1);
-                }
-
+                loadKey(file);
             }
         }
+
+        // Start with Encrypten Page if at least 1 private Key exists
+        if (!privateKeyListModel.isEmpty()) {
+            tabbedPane.setSelectedIndex(1);
+        }
+
+        privateKeyList.setSelectedIndex(0);
+        publicKeyList.setSelectedIndex(0);
         fileList.setCellRenderer(new FileListRenderer());
         File userHome = new File(System.getProperty("user.home"));
         setDirectoryForFileList(userHome);
@@ -166,7 +184,7 @@ public class CryptUI extends javax.swing.JFrame {
         tabbedPane = new javax.swing.JTabbedPane();
         keyManagementTab = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        keyList = new javax.swing.JList<>();
+        publicKeyList = new javax.swing.JList<>();
         jPanel1 = new javax.swing.JPanel();
         newKeyNameLabel = new javax.swing.JLabel();
         newKeyCommentLabel = new javax.swing.JLabel();
@@ -180,17 +198,24 @@ public class CryptUI extends javax.swing.JFrame {
         loadKeyButton = new javax.swing.JButton();
         importKeyButton = new javax.swing.JButton();
         exportPublicKeyButton = new javax.swing.JButton();
+        encryptFor = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        privateKeyList = new javax.swing.JList<>();
         fileManagementTab = new javax.swing.JPanel();
         usedKey = new javax.swing.JLabel();
         encryptFileButton = new javax.swing.JButton();
         decryptFileButton = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         fileList = new javax.swing.JList<>();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        infoBoxText = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Crypt UI");
 
-        jScrollPane1.setViewportView(keyList);
+        publicKeyList.setSelectedIndex(0);
+        jScrollPane1.setViewportView(publicKeyList);
 
         newKeyNameLabel.setText("Name");
 
@@ -279,35 +304,58 @@ public class CryptUI extends javax.swing.JFrame {
             }
         });
 
+        encryptFor.setText("Encrypt for:");
+
+        jLabel1.setText("Sign with:");
+
+        privateKeyList.setSelectedIndex(0);
+        jScrollPane3.setViewportView(privateKeyList);
+
         javax.swing.GroupLayout keyManagementTabLayout = new javax.swing.GroupLayout(keyManagementTab);
         keyManagementTab.setLayout(keyManagementTabLayout);
         keyManagementTabLayout.setHorizontalGroup(
             keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(keyManagementTabLayout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(keyManagementTabLayout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(keyManagementTabLayout.createSequentialGroup()
+                        .addComponent(encryptFor)
+                        .addGap(80, 80, 80)
+                        .addComponent(jLabel1)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(importKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(exportPublicKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(loadKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(loadKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(importKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, 131, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(197, Short.MAX_VALUE))
+                .addContainerGap(163, Short.MAX_VALUE))
         );
         keyManagementTabLayout.setVerticalGroup(
             keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)
             .addGroup(keyManagementTabLayout.createSequentialGroup()
+                .addGap(6, 6, 6)
+                .addGroup(keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(encryptFor)
+                    .addComponent(jLabel1))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1)
+                    .addComponent(jScrollPane3)))
+            .addGroup(keyManagementTabLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(keyManagementTabLayout.createSequentialGroup()
-                        .addGap(6, 6, 6)
                         .addComponent(loadKeyButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(importKeyButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(exportPublicKeyButton))
-                    .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 37, Short.MAX_VALUE))
+                        .addComponent(exportPublicKeyButton)))
+                .addGap(0, 42, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab("Key Management", keyManagementTab);
@@ -336,30 +384,41 @@ public class CryptUI extends javax.swing.JFrame {
         });
         jScrollPane2.setViewportView(fileList);
 
+        infoBoxText.setEditable(false);
+        infoBoxText.setBackground(new java.awt.Color(240, 240, 240));
+        infoBoxText.setColumns(20);
+        infoBoxText.setLineWrap(true);
+        infoBoxText.setRows(5);
+        jScrollPane4.setViewportView(infoBoxText);
+
         javax.swing.GroupLayout fileManagementTabLayout = new javax.swing.GroupLayout(fileManagementTab);
         fileManagementTab.setLayout(fileManagementTabLayout);
         fileManagementTabLayout.setHorizontalGroup(
             fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(fileManagementTabLayout.createSequentialGroup()
-                .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(fileManagementTabLayout.createSequentialGroup()
-                        .addComponent(usedKey, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(encryptFileButton)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(decryptFileButton))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 332, Short.MAX_VALUE))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(encryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+                    .addComponent(decryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(usedKey, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addContainerGap(418, Short.MAX_VALUE))
         );
         fileManagementTabLayout.setVerticalGroup(
             fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(fileManagementTabLayout.createSequentialGroup()
-                .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(usedKey)
-                    .addComponent(encryptFileButton)
-                    .addComponent(decryptFileButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 251, Short.MAX_VALUE))
+                .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(fileManagementTabLayout.createSequentialGroup()
+                        .addComponent(usedKey)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(encryptFileButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(decryptFileButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane4))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         tabbedPane.addTab("File Management", fileManagementTab);
@@ -398,7 +457,7 @@ public class CryptUI extends javax.swing.JFrame {
             File keysDir = getKeysDirectory();
             File newKey = new File(keysDir.getAbsolutePath() + "/" + rsa.hashCode() + ".key");
             rsa.saveKeyInFile(newKey);
-            keyListModel.addElement(rsa);
+            publicKeyListModel.addElement(rsa);
         } catch (RSAException | IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -418,7 +477,7 @@ public class CryptUI extends javax.swing.JFrame {
                 return;
             }
             AES aes = new AES();
-            IEncrypter rsa = (IEncrypter) keyListModel.getElementAt(keyList.getSelectedIndex());
+            IEncrypter rsa = (IEncrypter) publicKeyListModel.getElementAt(publicKeyList.getSelectedIndex());
             AESEncryptedData encryptedBytes;
             RSAEncryptedData rsaEncryptKey;
             try {
@@ -490,7 +549,7 @@ public class CryptUI extends javax.swing.JFrame {
     }//GEN-LAST:event_decryptFileButtonMouseClicked
 
     private void exportPublicKeyButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_exportPublicKeyButtonMouseClicked
-        RSAKeyPair rsa = (RSAKeyPair) keyListModel.getElementAt(keyList.getSelectedIndex());
+        RSAKeyPair rsa = (RSAKeyPair) publicKeyListModel.getElementAt(publicKeyList.getSelectedIndex());
         RSAPublicKey publicKey = rsa.getPublicKey();
         JFileChooser fileChooser = new JFileChooser();
         int returnVal2 = fileChooser.showSaveDialog(this);
@@ -512,7 +571,7 @@ public class CryptUI extends javax.swing.JFrame {
             try {
                 File openFile = fc.getSelectedFile();
                 RSAPublicKey publicKey = new RSAPublicKey(openFile);
-                keyListModel.addElement(publicKey);
+                publicKeyListModel.addElement(publicKey);
                 PUBLIC_KEY_MAP.put(Base64Util.encodeToString(publicKey.getHash()), publicKey);
 
             } catch (RSAException ex) {
@@ -522,26 +581,77 @@ public class CryptUI extends javax.swing.JFrame {
     }//GEN-LAST:event_importKeyButtonMouseClicked
 
     private void fileListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fileListMouseClicked
-        if (evt.getClickCount() == 2) {
-            File file = (File) fileListModel.get(fileList.getSelectedIndex());
-            if (file.isDirectory()) {
-                setDirectoryForFileList(file);
-            }
-
+        File file = (File) fileListModel.get(fileList.getSelectedIndex());
+        switch (evt.getClickCount()) {
+            case 1:
+                showInfo(file);
+                break;
+            case 2:
+                if (file.isDirectory()) {
+                    setDirectoryForFileList(file);
+                }
+                break;
         }
     }//GEN-LAST:event_fileListMouseClicked
+
+    public void showInfo(File file) {
+        StringBuilder text = new StringBuilder();
+        if (file.isDirectory()) {
+            try {
+                text.append(file.getCanonicalFile().getName());
+            } catch (IOException e) {
+                text.append(file.getName());
+            }
+        } else if (file.isFile()) {
+            try (FileInputStream fis = new FileInputStream(file)) {
+                DataType rsaType = DataType.fromByte(fis.read());
+                assertTrue(rsaType == DataType.SENDER_HASH);
+                byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
+                fis.read(senderKeyHash);
+
+                RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
+                RSAKeyPair rsa = KEY_MAP.get(encryptedAesKey.getKeyHash());
+                IEncrypter sender = PUBLIC_KEY_MAP.get(Base64Util.encodeToString(senderKeyHash));
+                if (rsa == null) {
+                    text.append("No Key for decryption found.\n");
+                } else {
+                    text.append("Encrypted for ");
+                    text.append(rsa.toString());
+                    text.append("\n");
+                }
+                if (sender == null) {
+                    text.append("Sender ");
+                    text.append(Base64Util.encodeToString(senderKeyHash).substring(0, 8));
+                    text.append(" unknown.\n");
+                } else {
+                    text.append("Signed by ");
+                    text.append(sender.toString());
+                }
+            } catch (AssertionException ex) {
+                text.append(file.getName());
+                text.append(" is not encrypted.");
+            } catch (IOException ex) {
+                text.append("Can not open File");
+            }
+        }
+        infoBoxText.setText(text.toString());
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton decryptFileButton;
     private javax.swing.JButton encryptFileButton;
+    private javax.swing.JLabel encryptFor;
     private javax.swing.JButton exportPublicKeyButton;
     private javax.swing.JList<String> fileList;
     private javax.swing.JPanel fileManagementTab;
     private javax.swing.JButton importKeyButton;
+    private javax.swing.JTextArea infoBoxText;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JList<String> keyList;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JPanel keyManagementTab;
     private javax.swing.JButton loadKeyButton;
     private javax.swing.JButton newKeyButton;
@@ -553,6 +663,8 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JRadioButton newKeyStrengthRadio4096;
     private javax.swing.JLabel newKeyTypeLabel;
     private javax.swing.JRadioButton newKeyTypeRadioRSA;
+    private javax.swing.JList<String> privateKeyList;
+    private javax.swing.JList<String> publicKeyList;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JLabel usedKey;
     // End of variables declaration//GEN-END:variables
@@ -560,11 +672,8 @@ public class CryptUI extends javax.swing.JFrame {
     private boolean loadKey(File file) {
         try {
             RSAKeyPair rsa = new RSAKeyPair(file);
-            if (signingKeyPair == null) {
-                signingKeyPair = rsa;
-                usedKey.setText(rsa.toString());
-            }
-            keyListModel.addElement(rsa);
+            publicKeyListModel.addElement(rsa);
+            privateKeyListModel.addElement(rsa);
             final String encodeToString = Base64Util.encodeToString(rsa.getHash());
             KEY_MAP.put(encodeToString, rsa);
             PUBLIC_KEY_MAP.put(encodeToString, rsa);
@@ -574,4 +683,5 @@ public class CryptUI extends javax.swing.JFrame {
         }
         return false;
     }
+
 }
