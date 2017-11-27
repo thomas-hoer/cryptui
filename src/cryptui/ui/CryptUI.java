@@ -458,6 +458,7 @@ public class CryptUI extends javax.swing.JFrame {
             File newKey = new File(keysDir.getAbsolutePath() + "/" + rsa.hashCode() + ".key");
             rsa.saveKeyInFile(newKey);
             publicKeyListModel.addElement(rsa);
+            privateKeyListModel.addElement(rsa);
         } catch (RSAException | IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
