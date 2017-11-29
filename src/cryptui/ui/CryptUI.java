@@ -202,14 +202,16 @@ public class CryptUI extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jScrollPane3 = new javax.swing.JScrollPane();
         privateKeyList = new javax.swing.JList<>();
-        fileManagementTab = new javax.swing.JPanel();
-        usedKey = new javax.swing.JLabel();
         encryptFileButton = new javax.swing.JButton();
         decryptFileButton = new javax.swing.JButton();
+        fileManagementTab = new javax.swing.JPanel();
+        usedKey = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         fileList = new javax.swing.JList<>();
         jScrollPane4 = new javax.swing.JScrollPane();
         infoBoxText = new javax.swing.JTextArea();
+        encryptSelectedFile = new javax.swing.JButton();
+        decryptSelectedFile = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Crypt UI");
@@ -311,6 +313,20 @@ public class CryptUI extends javax.swing.JFrame {
         privateKeyList.setSelectedIndex(0);
         jScrollPane3.setViewportView(privateKeyList);
 
+        encryptFileButton.setText("Encrypt File");
+        encryptFileButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                encryptFileButtonMouseClicked(evt);
+            }
+        });
+
+        decryptFileButton.setText("Decrypt File");
+        decryptFileButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                decryptFileButtonMouseClicked(evt);
+            }
+        });
+
         javax.swing.GroupLayout keyManagementTabLayout = new javax.swing.GroupLayout(keyManagementTab);
         keyManagementTab.setLayout(keyManagementTabLayout);
         keyManagementTabLayout.setHorizontalGroup(
@@ -329,7 +345,9 @@ public class CryptUI extends javax.swing.JFrame {
                 .addGroup(keyManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(exportPublicKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(loadKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(importKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, 131, Short.MAX_VALUE))
+                    .addComponent(importKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, 131, Short.MAX_VALUE)
+                    .addComponent(encryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(decryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(163, Short.MAX_VALUE))
@@ -354,28 +372,18 @@ public class CryptUI extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(importKeyButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(exportPublicKeyButton)))
-                .addGap(0, 42, Short.MAX_VALUE))
+                        .addComponent(exportPublicKeyButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(encryptFileButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(decryptFileButton)))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab("Key Management", keyManagementTab);
 
         usedKey.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cryptui/ui/list/key_pair.png"))); // NOI18N
         usedKey.setText("key");
-
-        encryptFileButton.setText("Encrypt File");
-        encryptFileButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                encryptFileButtonMouseClicked(evt);
-            }
-        });
-
-        decryptFileButton.setText("Decrypt File");
-        decryptFileButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                decryptFileButtonMouseClicked(evt);
-            }
-        });
 
         fileList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -391,6 +399,15 @@ public class CryptUI extends javax.swing.JFrame {
         infoBoxText.setRows(5);
         jScrollPane4.setViewportView(infoBoxText);
 
+        encryptSelectedFile.setText("Encrypt File");
+        encryptSelectedFile.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                encryptSelectedFileMouseClicked(evt);
+            }
+        });
+
+        decryptSelectedFile.setText("Decrypt File");
+
         javax.swing.GroupLayout fileManagementTabLayout = new javax.swing.GroupLayout(fileManagementTab);
         fileManagementTab.setLayout(fileManagementTabLayout);
         fileManagementTabLayout.setHorizontalGroup(
@@ -399,10 +416,10 @@ public class CryptUI extends javax.swing.JFrame {
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(encryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-                    .addComponent(decryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(usedKey, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                    .addComponent(usedKey, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                    .addComponent(encryptSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(decryptSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap(418, Short.MAX_VALUE))
         );
         fileManagementTabLayout.setVerticalGroup(
@@ -412,12 +429,12 @@ public class CryptUI extends javax.swing.JFrame {
                     .addGroup(fileManagementTabLayout.createSequentialGroup()
                         .addComponent(usedKey)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(encryptFileButton)
+                        .addComponent(encryptSelectedFile)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(decryptFileButton)
+                        .addComponent(decryptSelectedFile)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane4))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 294, Short.MAX_VALUE))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 315, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -595,6 +612,44 @@ public class CryptUI extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_fileListMouseClicked
 
+    private void encryptSelectedFileMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_encryptSelectedFileMouseClicked
+        int selectedIndex = fileList.getSelectedIndex();
+        if (selectedIndex < 0) {
+            return;
+        }
+        File openFile = (File) fileListModel.get(selectedIndex);
+        if (!openFile.isFile()) {
+            return;
+        }
+        byte[] bytes;
+        try (FileInputStream fis = new FileInputStream(openFile)) {
+            bytes = IOUtils.toByteArray(fis);
+        } catch (IOException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        }
+        AES aes = new AES();
+        IEncrypter rsa = (IEncrypter) publicKeyListModel.getElementAt(publicKeyList.getSelectedIndex());
+        AESEncryptedData encryptedBytes;
+        RSAEncryptedData rsaEncryptKey;
+        try {
+            encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, rsa.getHash()), bytes));
+            rsaEncryptKey = rsa.encrypt(aes.getKey());
+        } catch (RSAException | AESException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        }
+        File saveFile = getEncryptionFileFor(openFile);
+        try (FileOutputStream fos = new FileOutputStream(saveFile)) {
+            fos.write(DataType.SENDER_HASH.getNumber());
+            fos.write(signingKeyPair.getHash());
+            rsaEncryptKey.writeToOutputStream(fos);
+            encryptedBytes.writeToOutputStream(fos);
+        } catch (IOException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_encryptSelectedFileMouseClicked
+
     public void showInfo(File file) {
         StringBuilder text = new StringBuilder();
         if (file.isDirectory()) {
@@ -640,8 +695,10 @@ public class CryptUI extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton decryptFileButton;
+    private javax.swing.JButton decryptSelectedFile;
     private javax.swing.JButton encryptFileButton;
     private javax.swing.JLabel encryptFor;
+    private javax.swing.JButton encryptSelectedFile;
     private javax.swing.JButton exportPublicKeyButton;
     private javax.swing.JList<String> fileList;
     private javax.swing.JPanel fileManagementTab;
@@ -679,10 +736,35 @@ public class CryptUI extends javax.swing.JFrame {
             KEY_MAP.put(encodeToString, rsa);
             PUBLIC_KEY_MAP.put(encodeToString, rsa);
             return true;
+
         } catch (AssertionException | RSAException ex) {
-            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(CryptUI.class
+                    .getName()).log(Level.SEVERE, null, ex);
         }
         return false;
+    }
+
+    private File getEncryptionFileFor(File openFile) {
+        File newFile = new File(openFile.getPath() + ".asc");
+        if (!newFile.exists()) {
+            return newFile;
+        }
+        String path = openFile.getParent();
+        String fileName = openFile.getName();
+        int lastIndex = fileName.lastIndexOf(".");
+        String extension;
+        if (lastIndex == -1) {
+            extension = "";
+        } else {
+            extension = fileName.substring(lastIndex);
+            fileName = fileName.substring(0, lastIndex);
+        }
+        int index = 1;
+        do {
+            newFile = new File(path + "/" + fileName + "(" + index + ")" + extension + ".asc");
+            index++;
+        } while (newFile.exists());
+        return newFile;
     }
 
 }
