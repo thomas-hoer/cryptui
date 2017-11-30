@@ -492,40 +492,13 @@ public class CryptUI extends javax.swing.JFrame {
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File openFile = fc.getSelectedFile();
-            byte[] bytes;
-            try (FileInputStream fis = new FileInputStream(openFile)) {
-                bytes = IOUtils.toByteArray(fis);
-            } catch (IOException ex) {
-                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
-                return;
-            }
-            AES aes = new AES();
-            IEncrypter rsa = (IEncrypter) publicKeyListModel.getElementAt(publicKeyList.getSelectedIndex());
-            AESEncryptedData encryptedBytes;
-            RSAEncryptedData rsaEncryptKey;
-            try {
-                encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, rsa.getHash()), bytes));
-                rsaEncryptKey = rsa.encrypt(aes.getKey());
-            } catch (RSAException | AESException ex) {
-                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
-                return;
-            }
             JFileChooser fc2 = new JFileChooser();
             int returnVal2 = fc2.showSaveDialog(this);
             if (returnVal2 == JFileChooser.APPROVE_OPTION) {
                 File saveFile = fc2.getSelectedFile();
-                try (FileOutputStream fos = new FileOutputStream(saveFile)) {
-                    fos.write(DataType.SENDER_HASH.getNumber());
-                    fos.write(signingKeyPair.getHash());
-                    rsaEncryptKey.writeToOutputStream(fos);
-                    encryptedBytes.writeToOutputStream(fos);
-                } catch (IOException ex) {
-                    Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                encryptFile(openFile, saveFile);
             }
-
         }
-
     }//GEN-LAST:event_encryptFileButtonMouseClicked
 
     private void decryptFileButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_decryptFileButtonMouseClicked
@@ -534,40 +507,14 @@ public class CryptUI extends javax.swing.JFrame {
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File openFile = fc.getSelectedFile();
-            try (FileInputStream fis = new FileInputStream(openFile)) {
-                DataType rsaType = DataType.fromByte(fis.read());
-                assertTrue(rsaType == DataType.SENDER_HASH);
-                byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
-                fis.read(senderKeyHash);
 
-                RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
-                RSAKeyPair rsa = KEY_MAP.get(encryptedAesKey.getKeyHash());
-                if (rsa == null) {
-                    JOptionPane.showMessageDialog(this, "Can not decrypt file. No matching key found.");
-                    return;
-                }
-                byte[] aesKey = rsa.decrypt(encryptedAesKey);
-
-                AESEncryptedData aesEncryptedData = AESEncryptedData.fromInputStream(fis);
-                AES aes = new AES(aesKey);
-                byte[] decryptedData = aes.decrypt(aesEncryptedData);
-                byte[] sign = Arrays.copyOfRange(decryptedData, 0, RSABase.SIGN_LENGTH);
-                byte[] decryptedUseData = Arrays.copyOfRange(decryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
-                IEncrypter sender = PUBLIC_KEY_MAP.get(Base64Util.encodeToString(senderKeyHash));
-                assertTrue(sender.verifySignature(sign, decryptedUseData, rsa.getHash()));
-
-                JFileChooser fc2 = new JFileChooser();
-                int returnVal2 = fc2.showSaveDialog(this);
-                if (returnVal2 == JFileChooser.APPROVE_OPTION) {
-                    File saveFile = fc2.getSelectedFile();
-                    try (FileOutputStream fos = new FileOutputStream(saveFile)) {
-                        fos.write(decryptedUseData);
-                    }
-                }
-
-            } catch (IOException | AESException | RSAException ex) {
-                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+            JFileChooser fc2 = new JFileChooser();
+            int returnVal2 = fc2.showSaveDialog(this);
+            if (returnVal2 == JFileChooser.APPROVE_OPTION) {
+                File saveFile = fc2.getSelectedFile();
+                decryptFile(openFile, saveFile);
             }
+
         }
     }//GEN-LAST:event_decryptFileButtonMouseClicked
 
@@ -626,8 +573,13 @@ public class CryptUI extends javax.swing.JFrame {
         if (!openFile.isFile()) {
             return;
         }
+        File saveFile = getEncryptionFileFor(openFile);
+        encryptFile(openFile, saveFile);
+    }//GEN-LAST:event_encryptSelectedFileMouseClicked
+
+    private void encryptFile(File openFile, File saveFile) {
         byte[] bytes;
-        try (FileInputStream fis = new FileInputStream(openFile)) {
+        try (final FileInputStream fis = new FileInputStream(openFile)) {
             bytes = IOUtils.toByteArray(fis);
         } catch (IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -644,7 +596,6 @@ public class CryptUI extends javax.swing.JFrame {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
             return;
         }
-        File saveFile = getEncryptionFileFor(openFile);
         try (FileOutputStream fos = new FileOutputStream(saveFile)) {
             fos.write(DataType.SENDER_HASH.getNumber());
             fos.write(signingKeyPair.getHash());
@@ -653,7 +604,7 @@ public class CryptUI extends javax.swing.JFrame {
         } catch (IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }//GEN-LAST:event_encryptSelectedFileMouseClicked
+    }
 
     private void decryptSelectedFileMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_decryptSelectedFileMouseClicked
         int selectedIndex = fileList.getSelectedIndex();
@@ -664,12 +615,17 @@ public class CryptUI extends javax.swing.JFrame {
         if (!openFile.isFile()) {
             return;
         }
+        File saveFile = getDecryptionFileFor(openFile);
+        decryptFile(openFile, saveFile);
+
+    }//GEN-LAST:event_decryptSelectedFileMouseClicked
+
+    private void decryptFile(final File openFile, File saveFile) {
         try (FileInputStream fis = new FileInputStream(openFile)) {
             DataType rsaType = DataType.fromByte(fis.read());
             assertTrue(rsaType == DataType.SENDER_HASH);
             byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
             fis.read(senderKeyHash);
-
             RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
             RSAKeyPair rsa = KEY_MAP.get(encryptedAesKey.getKeyHash());
             if (rsa == null) {
@@ -677,7 +633,6 @@ public class CryptUI extends javax.swing.JFrame {
                 return;
             }
             byte[] aesKey = rsa.decrypt(encryptedAesKey);
-
             AESEncryptedData aesEncryptedData = AESEncryptedData.fromInputStream(fis);
             AES aes = new AES(aesKey);
             byte[] decryptedData = aes.decrypt(aesEncryptedData);
@@ -685,16 +640,13 @@ public class CryptUI extends javax.swing.JFrame {
             byte[] decryptedUseData = Arrays.copyOfRange(decryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
             IEncrypter sender = PUBLIC_KEY_MAP.get(Base64Util.encodeToString(senderKeyHash));
             assertTrue(sender.verifySignature(sign, decryptedUseData, rsa.getHash()));
-
-            File saveFile = getDecryptionFileFor(openFile);
             try (FileOutputStream fos = new FileOutputStream(saveFile)) {
                 fos.write(decryptedUseData);
             }
-
         } catch (IOException | AESException | RSAException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }//GEN-LAST:event_decryptSelectedFileMouseClicked
+    }
 
     public void showInfo(File file) {
         StringBuilder text = new StringBuilder();
