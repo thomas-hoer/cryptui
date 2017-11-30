@@ -407,6 +407,11 @@ public class CryptUI extends javax.swing.JFrame {
         });
 
         decryptSelectedFile.setText("Decrypt File");
+        decryptSelectedFile.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                decryptSelectedFileMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout fileManagementTabLayout = new javax.swing.GroupLayout(fileManagementTab);
         fileManagementTab.setLayout(fileManagementTabLayout);
@@ -650,6 +655,47 @@ public class CryptUI extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_encryptSelectedFileMouseClicked
 
+    private void decryptSelectedFileMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_decryptSelectedFileMouseClicked
+        int selectedIndex = fileList.getSelectedIndex();
+        if (selectedIndex < 0) {
+            return;
+        }
+        File openFile = (File) fileListModel.get(selectedIndex);
+        if (!openFile.isFile()) {
+            return;
+        }
+        try (FileInputStream fis = new FileInputStream(openFile)) {
+            DataType rsaType = DataType.fromByte(fis.read());
+            assertTrue(rsaType == DataType.SENDER_HASH);
+            byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
+            fis.read(senderKeyHash);
+
+            RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
+            RSAKeyPair rsa = KEY_MAP.get(encryptedAesKey.getKeyHash());
+            if (rsa == null) {
+                JOptionPane.showMessageDialog(this, "Can not decrypt file. No matching key found.");
+                return;
+            }
+            byte[] aesKey = rsa.decrypt(encryptedAesKey);
+
+            AESEncryptedData aesEncryptedData = AESEncryptedData.fromInputStream(fis);
+            AES aes = new AES(aesKey);
+            byte[] decryptedData = aes.decrypt(aesEncryptedData);
+            byte[] sign = Arrays.copyOfRange(decryptedData, 0, RSABase.SIGN_LENGTH);
+            byte[] decryptedUseData = Arrays.copyOfRange(decryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
+            IEncrypter sender = PUBLIC_KEY_MAP.get(Base64Util.encodeToString(senderKeyHash));
+            assertTrue(sender.verifySignature(sign, decryptedUseData, rsa.getHash()));
+
+            File saveFile = getDecryptionFileFor(openFile);
+            try (FileOutputStream fos = new FileOutputStream(saveFile)) {
+                fos.write(decryptedUseData);
+            }
+
+        } catch (IOException | AESException | RSAException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_decryptSelectedFileMouseClicked
+
     public void showInfo(File file) {
         StringBuilder text = new StringBuilder();
         if (file.isDirectory()) {
@@ -744,13 +790,15 @@ public class CryptUI extends javax.swing.JFrame {
         return false;
     }
 
-    private File getEncryptionFileFor(File openFile) {
-        File newFile = new File(openFile.getPath() + ".asc");
+    private File getDecryptionFileFor(File openFile) {
+        String fileName = openFile.getPath();
+        if (fileName.endsWith(".asc")) {
+            fileName = fileName.substring(0, fileName.length() - 4);
+        }
+        File newFile = new File(fileName);
         if (!newFile.exists()) {
             return newFile;
         }
-        String path = openFile.getParent();
-        String fileName = openFile.getName();
         int lastIndex = fileName.lastIndexOf(".");
         String extension;
         if (lastIndex == -1) {
@@ -761,7 +809,29 @@ public class CryptUI extends javax.swing.JFrame {
         }
         int index = 1;
         do {
-            newFile = new File(path + "/" + fileName + "(" + index + ")" + extension + ".asc");
+            newFile = new File(fileName + "(" + index + ")" + extension);
+            index++;
+        } while (newFile.exists());
+        return newFile;
+    }
+
+    private File getEncryptionFileFor(File openFile) {
+        File newFile = new File(openFile.getPath() + ".asc");
+        if (!newFile.exists()) {
+            return newFile;
+        }
+        String fileName = openFile.getPath();
+        int lastIndex = fileName.lastIndexOf(".");
+        String extension;
+        if (lastIndex == -1) {
+            extension = "";
+        } else {
+            extension = fileName.substring(lastIndex);
+            fileName = fileName.substring(0, lastIndex);
+        }
+        int index = 1;
+        do {
+            newFile = new File(fileName + "(" + index + ")" + extension + ".asc");
             index++;
         } while (newFile.exists());
         return newFile;
