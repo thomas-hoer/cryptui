@@ -23,7 +23,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
-import javax.swing.JLabel;
 import javax.swing.JList;
 import org.apache.commons.io.IOUtils;
 
@@ -31,11 +30,8 @@ public class KeyListRenderer extends DefaultListCellRenderer {
 
     private ImageIcon keyPairIcon;
     private ImageIcon publicKeyIcon;
-    private final JLabel label;
 
     public KeyListRenderer() {
-        label = new JLabel();
-        label.setOpaque(true);
         try (InputStream in = KeyListRenderer.class.getResourceAsStream("/cryptui/ui/list/key_pair.png")) {
             byte[] b = IOUtils.toByteArray(in);
             keyPairIcon = new ImageIcon(b);
