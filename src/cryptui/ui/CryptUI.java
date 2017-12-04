@@ -105,8 +105,11 @@ public class CryptUI extends javax.swing.JFrame {
         } catch (IOException e) {
             canonicalFile = userHome;
         }
+        StringBuilder pathString = new StringBuilder();
         for (String path : canonicalFile.getAbsolutePath().replace('\\', '/').split("/")) {
-            directoryListModel.addElement(path);
+            pathString.append(path);
+            pathString.append("/");
+            directoryListModel.addElement(new File(pathString.toString()));
         }
         File[] files = canonicalFile.listFiles();
         fileListModel.addElement(new File(canonicalFile + "/.."));
@@ -426,11 +429,16 @@ public class CryptUI extends javax.swing.JFrame {
         });
 
         directoryList.setModel(directoryListModel);
-        directoryList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+        directoryList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         directoryList.setAutoscrolls(false);
         directoryList.setCellRenderer(new DirectoryListRenderer());
         directoryList.setLayoutOrientation(javax.swing.JList.HORIZONTAL_WRAP);
         directoryList.setVisibleRowCount(-1);
+        directoryList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                directoryListMouseClicked(evt);
+            }
+        });
         jScrollPane5.setViewportView(directoryList);
 
         javax.swing.GroupLayout fileManagementTabLayout = new javax.swing.GroupLayout(fileManagementTab);
@@ -613,6 +621,11 @@ public class CryptUI extends javax.swing.JFrame {
                 break;
         }
     }//GEN-LAST:event_fileListMouseClicked
+
+    private void directoryListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_directoryListMouseClicked
+        File newDirectory = (File) directoryListModel.get(directoryList.getSelectedIndex());
+        setDirectoryForFileList(newDirectory);
+    }//GEN-LAST:event_directoryListMouseClicked
 
     private void encryptFile(File openFile, File saveFile) {
         byte[] bytes;

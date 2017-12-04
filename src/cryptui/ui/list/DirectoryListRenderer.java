@@ -16,9 +16,11 @@
 package cryptui.ui.list;
 
 import java.awt.Component;
+import java.io.File;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JList;
+import org.apache.commons.lang3.StringUtils;
 
 public class DirectoryListRenderer extends DefaultListCellRenderer {
 
@@ -30,7 +32,11 @@ public class DirectoryListRenderer extends DefaultListCellRenderer {
 
     @Override
     public Component getListCellRendererComponent(JList list, Object value, int index, boolean selected, boolean expanded) {
-        String text = value.toString();
+        File file = (File) value;
+        String text = file.getName();
+        if (StringUtils.isEmpty(text)) {
+            text = file.toString();
+        }
         if (text.length() > 12) {
             text = text.substring(0, 10) + "...";
         }
