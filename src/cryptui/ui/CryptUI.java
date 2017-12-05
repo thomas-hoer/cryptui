@@ -57,6 +57,7 @@ public class CryptUI extends javax.swing.JFrame {
     private final DefaultListModel directoryListModel = new DefaultListModel();
     private final DefaultListModel publicKeyListModel = new DefaultListModel();
     private final DefaultListModel privateKeyListModel = new DefaultListModel();
+    private final DefaultListModel directoryDetailListModel = new DefaultListModel();
     private final DefaultListModel fileListModel = new DefaultListModel();
     private RSAKeyPair signingKeyPair;
 
@@ -99,6 +100,7 @@ public class CryptUI extends javax.swing.JFrame {
     private void setDirectoryForFileList(File userHome) {
         directoryListModel.clear();
         fileListModel.clear();
+        directoryDetailListModel.clear();
         File canonicalFile;
         try {
             canonicalFile = userHome.getCanonicalFile();
@@ -112,11 +114,15 @@ public class CryptUI extends javax.swing.JFrame {
             directoryListModel.addElement(new File(pathString.toString()));
         }
         File[] files = canonicalFile.listFiles();
-        fileListModel.addElement(new File(canonicalFile + "/.."));
+        directoryDetailListModel.addElement(new File(canonicalFile + "/.."));
         if (files != null) {
             Arrays.sort(files, (a, b) -> a.isFile() == b.isFile() ? a.compareTo(b) : a.isFile() ? 1 : -1);
             for (File file : files) {
-                fileListModel.addElement(file);
+                if (file.isFile()) {
+                    fileListModel.addElement(file);
+                } else {
+                    directoryDetailListModel.addElement(file);
+                }
             }
         }
     }
@@ -210,13 +216,15 @@ public class CryptUI extends javax.swing.JFrame {
         fileManagementTab = new javax.swing.JPanel();
         usedKey = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
-        fileList = new javax.swing.JList<>();
+        directoryDetailList = new javax.swing.JList<>();
         jScrollPane4 = new javax.swing.JScrollPane();
         infoBoxText = new javax.swing.JTextArea();
         encryptSelectedFile = new javax.swing.JButton();
         decryptSelectedFile = new javax.swing.JButton();
         jScrollPane5 = new javax.swing.JScrollPane();
         directoryList = new javax.swing.JList<>();
+        jScrollPane6 = new javax.swing.JScrollPane();
+        fileList = new javax.swing.JList<>();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Crypt UI");
@@ -398,14 +406,14 @@ public class CryptUI extends javax.swing.JFrame {
         usedKey.setIcon(new javax.swing.ImageIcon(getClass().getResource("/cryptui/ui/list/key_pair.png"))); // NOI18N
         usedKey.setText("key");
 
-        fileList.setModel(fileListModel);
-        fileList.setCellRenderer(new FileListRenderer());
-        fileList.addMouseListener(new java.awt.event.MouseAdapter() {
+        directoryDetailList.setModel(directoryDetailListModel);
+        directoryDetailList.setCellRenderer(new FileListRenderer());
+        directoryDetailList.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                fileListMouseClicked(evt);
+                directoryDetailListMouseClicked(evt);
             }
         });
-        jScrollPane2.setViewportView(fileList);
+        jScrollPane2.setViewportView(directoryDetailList);
 
         infoBoxText.setEditable(false);
         infoBoxText.setBackground(new java.awt.Color(240, 240, 240));
@@ -441,21 +449,31 @@ public class CryptUI extends javax.swing.JFrame {
         });
         jScrollPane5.setViewportView(directoryList);
 
+        fileList.setModel(fileListModel);
+        fileList.setCellRenderer(new FileListRenderer());
+        fileList.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                fileListMouseClicked(evt);
+            }
+        });
+        jScrollPane6.setViewportView(fileList);
+
         javax.swing.GroupLayout fileManagementTabLayout = new javax.swing.GroupLayout(fileManagementTab);
         fileManagementTab.setLayout(fileManagementTabLayout);
         fileManagementTabLayout.setHorizontalGroup(
             fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(fileManagementTabLayout.createSequentialGroup()
-                .addContainerGap()
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(encryptSelectedFile, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(usedKey, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(decryptSelectedFile, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(428, Short.MAX_VALUE))
-            .addComponent(jScrollPane5, javax.swing.GroupLayout.Alignment.TRAILING)
+                .addContainerGap(261, Short.MAX_VALUE))
+            .addComponent(jScrollPane5)
         );
         fileManagementTabLayout.setVerticalGroup(
             fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -472,7 +490,8 @@ public class CryptUI extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(12, 12, 12))
-                    .addComponent(jScrollPane2)))
+                    .addComponent(jScrollPane2)
+                    .addComponent(jScrollPane6, javax.swing.GroupLayout.Alignment.TRAILING)))
         );
 
         tabbedPane.addTab("File Management", fileManagementTab);
@@ -608,24 +627,22 @@ public class CryptUI extends javax.swing.JFrame {
         encryptFile(openFile, saveFile);
     }//GEN-LAST:event_encryptSelectedFileMouseClicked
 
-    private void fileListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fileListMouseClicked
-        File file = (File) fileListModel.get(fileList.getSelectedIndex());
-        switch (evt.getClickCount()) {
-            case 1:
-                showInfo(file);
-                break;
-            case 2:
-                if (file.isDirectory()) {
-                    setDirectoryForFileList(file);
-                }
-                break;
+    private void directoryDetailListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_directoryDetailListMouseClicked
+        File file = (File) directoryDetailListModel.get(directoryDetailList.getSelectedIndex());
+        if (evt.getClickCount() == 2 && file.isDirectory()) {
+            setDirectoryForFileList(file);
         }
-    }//GEN-LAST:event_fileListMouseClicked
+    }//GEN-LAST:event_directoryDetailListMouseClicked
 
     private void directoryListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_directoryListMouseClicked
         File newDirectory = (File) directoryListModel.get(directoryList.getSelectedIndex());
         setDirectoryForFileList(newDirectory);
     }//GEN-LAST:event_directoryListMouseClicked
+
+    private void fileListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fileListMouseClicked
+        File file = (File) fileListModel.get(fileList.getSelectedIndex());
+        showInfo(file);
+    }//GEN-LAST:event_fileListMouseClicked
 
     private void encryptFile(File openFile, File saveFile) {
         byte[] bytes;
@@ -730,6 +747,7 @@ public class CryptUI extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton decryptFileButton;
     private javax.swing.JButton decryptSelectedFile;
+    private javax.swing.JList<String> directoryDetailList;
     private javax.swing.JList<String> directoryList;
     private javax.swing.JButton encryptFileButton;
     private javax.swing.JLabel encryptFor;
@@ -746,6 +764,7 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JPanel keyManagementTab;
     private javax.swing.JButton loadKeyButton;
     private javax.swing.JButton newKeyButton;
