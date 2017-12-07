@@ -16,6 +16,7 @@
 package cryptui.ui;
 
 import cryptui.DataType;
+import cryptui.crypto.KeyStore;
 import cryptui.crypto.asymetric.IEncrypter;
 import cryptui.crypto.asymetric.RSABase;
 import cryptui.crypto.asymetric.RSAEncryptedData;
@@ -38,8 +39,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
@@ -52,11 +51,7 @@ import org.apache.commons.lang3.ArrayUtils;
 public class CryptUI extends javax.swing.JFrame {
 
     private static File HOME_DIRECTORY;
-    private static final Map<String, RSAKeyPair> KEY_MAP = new HashMap<>();
-    private static final Map<String, IEncrypter> PUBLIC_KEY_MAP = new HashMap<>();
     private final DefaultListModel directoryListModel = new DefaultListModel();
-    private final DefaultListModel publicKeyListModel = new DefaultListModel();
-    private final DefaultListModel privateKeyListModel = new DefaultListModel();
     private final DefaultListModel directoryDetailListModel = new DefaultListModel();
     private final DefaultListModel fileListModel = new DefaultListModel();
     private RSAKeyPair signingKeyPair;
@@ -73,7 +68,7 @@ public class CryptUI extends javax.swing.JFrame {
             if (selectedIndices.length > 1) {
                 privateKeyList.setSelectedIndex(selectedIndices[0]);
             }
-            signingKeyPair = (RSAKeyPair) privateKeyListModel.get(selectedIndices[0]);
+            signingKeyPair = KeyStore.getPrivateKeyListModel().get(selectedIndices[0]);
             usedKey.setText(signingKeyPair.toString());
         });
 
@@ -86,7 +81,7 @@ public class CryptUI extends javax.swing.JFrame {
         }
 
         // Start with Encrypten Page if at least 1 private Key exists
-        if (!privateKeyListModel.isEmpty()) {
+        if (!KeyStore.getPrivateKeyListModel().isEmpty()) {
             tabbedPane.setSelectedIndex(1);
         }
 
@@ -229,7 +224,7 @@ public class CryptUI extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Crypt UI");
 
-        publicKeyList.setModel(publicKeyListModel);
+        publicKeyList.setModel(KeyStore.getPublicKeyListModel());
         publicKeyList.setCellRenderer(new KeyListRenderer());
         publicKeyList.setSelectedIndex(0);
         jScrollPane1.setViewportView(publicKeyList);
@@ -321,11 +316,11 @@ public class CryptUI extends javax.swing.JFrame {
             }
         });
 
-        encryptFor.setText("Encrypt for:");
+        encryptFor.setText("Public Keys:");
 
-        jLabel1.setText("Sign with:");
+        jLabel1.setText("Private Keys:");
 
-        privateKeyList.setModel(privateKeyListModel);
+        privateKeyList.setModel(KeyStore.getPrivateKeyListModel());
         privateKeyList.setCellRenderer(new KeyListRenderer());
         privateKeyList.setSelectedIndex(0);
         jScrollPane3.setViewportView(privateKeyList);
@@ -396,6 +391,9 @@ public class CryptUI extends javax.swing.JFrame {
                         .addComponent(decryptFileButton)))
                 .addGap(0, 0, Short.MAX_VALUE))
         );
+
+        encryptFor.getAccessibleContext().setAccessibleName("Public Keys");
+        jLabel1.getAccessibleContext().setAccessibleName("Private Keys");
 
         tabbedPane.addTab("Key Management", keyManagementTab);
 
@@ -487,10 +485,10 @@ public class CryptUI extends javax.swing.JFrame {
                         .addComponent(encryptSelectedFile)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(decryptSelectedFile)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(12, 12, 12))
-                    .addComponent(jScrollPane2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane4)
+                        .addContainerGap())
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 315, Short.MAX_VALUE)
                     .addComponent(jScrollPane6, javax.swing.GroupLayout.Alignment.TRAILING)))
         );
 
@@ -530,8 +528,7 @@ public class CryptUI extends javax.swing.JFrame {
             File keysDir = getKeysDirectory();
             File newKey = new File(keysDir.getAbsolutePath() + "/" + rsa.hashCode() + ".key");
             rsa.saveKeyInFile(newKey);
-            publicKeyListModel.addElement(rsa);
-            privateKeyListModel.addElement(rsa);
+            KeyStore.addPrivate(rsa);
         } catch (RSAException | IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -570,7 +567,7 @@ public class CryptUI extends javax.swing.JFrame {
     }//GEN-LAST:event_decryptFileButtonMouseClicked
 
     private void exportPublicKeyButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_exportPublicKeyButtonMouseClicked
-        RSAKeyPair rsa = (RSAKeyPair) publicKeyListModel.getElementAt(publicKeyList.getSelectedIndex());
+        RSAKeyPair rsa = KeyStore.getPrivateKeyListModel().getElementAt(privateKeyList.getSelectedIndex());
         RSAPublicKey publicKey = rsa.getPublicKey();
         JFileChooser fileChooser = new JFileChooser();
         int returnVal2 = fileChooser.showSaveDialog(this);
@@ -592,8 +589,7 @@ public class CryptUI extends javax.swing.JFrame {
             try {
                 File openFile = fc.getSelectedFile();
                 RSAPublicKey publicKey = new RSAPublicKey(openFile);
-                publicKeyListModel.addElement(publicKey);
-                PUBLIC_KEY_MAP.put(Base64Util.encodeToString(publicKey.getHash()), publicKey);
+                KeyStore.addPublic(publicKey);
 
             } catch (RSAException ex) {
                 Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -629,7 +625,7 @@ public class CryptUI extends javax.swing.JFrame {
 
     private void directoryDetailListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_directoryDetailListMouseClicked
         File file = (File) directoryDetailListModel.get(directoryDetailList.getSelectedIndex());
-        if (evt.getClickCount() == 2 && file.isDirectory()) {
+        if (evt.getClickCount() == 2) {
             setDirectoryForFileList(file);
         }
     }//GEN-LAST:event_directoryDetailListMouseClicked
@@ -653,7 +649,7 @@ public class CryptUI extends javax.swing.JFrame {
             return;
         }
         AES aes = new AES();
-        IEncrypter rsa = (IEncrypter) publicKeyListModel.getElementAt(publicKeyList.getSelectedIndex());
+        IEncrypter rsa = KeyStore.getPublicKeyListModel().getElementAt(publicKeyList.getSelectedIndex());
         AESEncryptedData encryptedBytes;
         RSAEncryptedData rsaEncryptKey;
         try {
@@ -680,7 +676,7 @@ public class CryptUI extends javax.swing.JFrame {
             byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
             fis.read(senderKeyHash);
             RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
-            RSAKeyPair rsa = KEY_MAP.get(encryptedAesKey.getKeyHash());
+            RSAKeyPair rsa = KeyStore.getPrivate(encryptedAesKey.getKeyHash());
             if (rsa == null) {
                 JOptionPane.showMessageDialog(this, "Can not decrypt file. No matching key found.");
                 return;
@@ -691,7 +687,7 @@ public class CryptUI extends javax.swing.JFrame {
             byte[] decryptedData = aes.decrypt(aesEncryptedData);
             byte[] sign = Arrays.copyOfRange(decryptedData, 0, RSABase.SIGN_LENGTH);
             byte[] decryptedUseData = Arrays.copyOfRange(decryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
-            IEncrypter sender = PUBLIC_KEY_MAP.get(Base64Util.encodeToString(senderKeyHash));
+            IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
             assertTrue(sender.verifySignature(sign, decryptedUseData, rsa.getHash()));
             try (FileOutputStream fos = new FileOutputStream(saveFile)) {
                 fos.write(decryptedUseData);
@@ -717,8 +713,8 @@ public class CryptUI extends javax.swing.JFrame {
                 fis.read(senderKeyHash);
 
                 RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
-                RSAKeyPair rsa = KEY_MAP.get(encryptedAesKey.getKeyHash());
-                IEncrypter sender = PUBLIC_KEY_MAP.get(Base64Util.encodeToString(senderKeyHash));
+                RSAKeyPair rsa = KeyStore.getPrivate(encryptedAesKey.getKeyHash());
+                IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
                 if (rsa == null) {
                     text.append("No Key for decryption found.\n");
                 } else {
@@ -776,8 +772,8 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JRadioButton newKeyStrengthRadio4096;
     private javax.swing.JLabel newKeyTypeLabel;
     private javax.swing.JRadioButton newKeyTypeRadioRSA;
-    private javax.swing.JList<String> privateKeyList;
-    private javax.swing.JList<String> publicKeyList;
+    private javax.swing.JList<RSAKeyPair> privateKeyList;
+    private javax.swing.JList<IEncrypter> publicKeyList;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JLabel usedKey;
     // End of variables declaration//GEN-END:variables
@@ -785,11 +781,7 @@ public class CryptUI extends javax.swing.JFrame {
     private boolean loadKey(File file) {
         try {
             RSAKeyPair rsa = new RSAKeyPair(file);
-            publicKeyListModel.addElement(rsa);
-            privateKeyListModel.addElement(rsa);
-            final String encodeToString = Base64Util.encodeToString(rsa.getHash());
-            KEY_MAP.put(encodeToString, rsa);
-            PUBLIC_KEY_MAP.put(encodeToString, rsa);
+            KeyStore.addPrivate(rsa);
             return true;
 
         } catch (AssertionException | RSAException ex) {

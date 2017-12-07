@@ -129,7 +129,7 @@
                 <Component class="javax.swing.JList" name="publicKeyList">
                   <Properties>
                     <Property name="model" type="javax.swing.ListModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                      <Connection code="publicKeyListModel" type="code"/>
+                      <Connection code="KeyStore.getPublicKeyListModel()" type="code"/>
                     </Property>
                     <Property name="cellRenderer" type="javax.swing.ListCellRenderer" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="new KeyListRenderer()" type="code"/>
@@ -137,7 +137,7 @@
                     <Property name="selectedIndex" type="int" value="0"/>
                   </Properties>
                   <AuxValues>
-                    <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+                    <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;IEncrypter&gt;"/>
                   </AuxValues>
                 </Component>
               </SubComponents>
@@ -268,13 +268,19 @@
             </Component>
             <Component class="javax.swing.JLabel" name="encryptFor">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Encrypt for:"/>
+                <Property name="text" type="java.lang.String" value="Public Keys:"/>
               </Properties>
+              <AccessibilityProperties>
+                <Property name="AccessibleContext.accessibleName" type="java.lang.String" value="Public Keys"/>
+              </AccessibilityProperties>
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel1">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Sign with:"/>
+                <Property name="text" type="java.lang.String" value="Private Keys:"/>
               </Properties>
+              <AccessibilityProperties>
+                <Property name="AccessibleContext.accessibleName" type="java.lang.String" value="Private Keys"/>
+              </AccessibilityProperties>
             </Component>
             <Container class="javax.swing.JScrollPane" name="jScrollPane3">
               <AuxValues>
@@ -286,7 +292,7 @@
                 <Component class="javax.swing.JList" name="privateKeyList">
                   <Properties>
                     <Property name="model" type="javax.swing.ListModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                      <Connection code="privateKeyListModel" type="code"/>
+                      <Connection code="KeyStore.getPrivateKeyListModel()" type="code"/>
                     </Property>
                     <Property name="cellRenderer" type="javax.swing.ListCellRenderer" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
                       <Connection code="new KeyListRenderer()" type="code"/>
@@ -294,7 +300,7 @@
                     <Property name="selectedIndex" type="int" value="0"/>
                   </Properties>
                   <AuxValues>
-                    <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+                    <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;RSAKeyPair&gt;"/>
                   </AuxValues>
                 </Component>
               </SubComponents>
@@ -364,11 +370,11 @@
                               <Component id="encryptSelectedFile" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="decryptSelectedFile" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="32767" attributes="0"/>
-                              <Component id="jScrollPane4" min="-2" pref="207" max="-2" attributes="0"/>
-                              <EmptySpace min="-2" pref="12" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="jScrollPane4" max="32767" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
                           </Group>
-                          <Component id="jScrollPane2" max="32767" attributes="0"/>
+                          <Component id="jScrollPane2" pref="315" max="32767" attributes="0"/>
                           <Component id="jScrollPane6" alignment="1" max="32767" attributes="0"/>
                       </Group>
                   </Group>
