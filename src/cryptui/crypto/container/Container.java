@@ -13,15 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cryptui.crypto.asymetric;
+package cryptui.crypto.container;
 
-import cryptui.crypto.container.RSAEncryptedData;
+public class Container {
 
-public interface IEncrypter {
-
-    public RSAEncryptedData encrypt(byte[] data) throws RSAException;
-
-    public byte[] getHash();
-
-    public boolean verifySignature(byte[] sign, byte[] dat, byte[] recipient) throws RSAException;
 }

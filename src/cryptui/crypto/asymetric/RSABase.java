@@ -15,6 +15,7 @@
  */
 package cryptui.crypto.asymetric;
 
+import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.util.Base64Util;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;

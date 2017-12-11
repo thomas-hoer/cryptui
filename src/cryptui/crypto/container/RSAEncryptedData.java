@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cryptui.crypto.asymetric;
+package cryptui.crypto.container;
 
 import cryptui.DataType;
+import cryptui.crypto.asymetric.RSABase;
 import cryptui.crypto.hash.SHA3Hash;
 import static cryptui.util.Assert.assertTrue;
 import cryptui.util.Base64Util;

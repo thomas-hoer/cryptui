@@ -15,6 +15,7 @@
  */
 package cryptui.crypto.asymetric;
 
+import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.DataType;
 import cryptui.crypto.hash.SHA3Hash;
 import static cryptui.util.Assert.assertTrue;

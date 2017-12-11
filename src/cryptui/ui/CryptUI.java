@@ -19,13 +19,13 @@ import cryptui.DataType;
 import cryptui.crypto.KeyStore;
 import cryptui.crypto.asymetric.IEncrypter;
 import cryptui.crypto.asymetric.RSABase;
-import cryptui.crypto.asymetric.RSAEncryptedData;
+import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.crypto.asymetric.RSAException;
 import cryptui.crypto.asymetric.RSAKeyPair;
 import cryptui.crypto.asymetric.RSAPublicKey;
 import cryptui.crypto.hash.SHA3Hash;
 import cryptui.crypto.symetric.AES;
-import cryptui.crypto.symetric.AESEncryptedData;
+import cryptui.crypto.container.AESEncryptedData;
 import cryptui.crypto.symetric.AESException;
 import cryptui.ui.list.DirectoryListRenderer;
 import cryptui.ui.list.FileListRenderer;
@@ -39,6 +39,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
@@ -649,22 +650,21 @@ public class CryptUI extends javax.swing.JFrame {
             return;
         }
         AES aes = new AES();
-        IEncrypter rsa = KeyStore.getPublicKeyListModel().getElementAt(publicKeyList.getSelectedIndex());
+        List<IEncrypter> selectedReceiver = publicKeyList.getSelectedValuesList();
         AESEncryptedData encryptedBytes;
         RSAEncryptedData rsaEncryptKey;
-        try {
-            encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, rsa.getHash()), bytes));
-            rsaEncryptKey = rsa.encrypt(aes.getKey());
-        } catch (RSAException | AESException ex) {
-            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
-            return;
-        }
         try (FileOutputStream fos = new FileOutputStream(saveFile)) {
             fos.write(DataType.SENDER_HASH.getNumber());
             fos.write(signingKeyPair.getHash());
-            rsaEncryptKey.writeToOutputStream(fos);
+
+            for (IEncrypter rsa : selectedReceiver) {
+                rsaEncryptKey = rsa.encrypt(aes.getKey());
+                rsaEncryptKey.writeToOutputStream(fos);
+            }
+
+            encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes), bytes));
             encryptedBytes.writeToOutputStream(fos);
-        } catch (IOException ex) {
+        } catch (RSAException | AESException | IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

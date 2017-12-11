@@ -15,6 +15,8 @@
  */
 package cryptui.crypto.symetric;
 
+import cryptui.crypto.container.AESEncryptedData;
+import static cryptui.util.Assert.assertTrue;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -56,7 +58,7 @@ public class AES {
     }
 
     public AES(byte[] keyBytes) {
-        assert (keyBytes.length == 16);
+        assertTrue(keyBytes.length == 16);
         this.keyBytes = keyBytes;
         key = new SecretKeySpec(keyBytes, "AES");
         try {

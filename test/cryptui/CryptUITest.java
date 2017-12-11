@@ -15,11 +15,11 @@
  */
 package cryptui;
 
-import cryptui.crypto.asymetric.RSAEncryptedData;
+import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.crypto.asymetric.RSAException;
 import cryptui.crypto.asymetric.RSAKeyPair;
 import cryptui.crypto.symetric.AES;
-import cryptui.crypto.symetric.AESEncryptedData;
+import cryptui.crypto.container.AESEncryptedData;
 import java.security.GeneralSecurityException;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
