@@ -15,8 +15,8 @@
  */
 package cryptui.crypto.asymetric;
 
-import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.DataType;
+import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.crypto.hash.SHA3Hash;
 import static cryptui.util.Assert.assertTrue;
 import cryptui.util.NumberUtils;
@@ -173,12 +173,12 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
         return verifySignature(publicKey, sign, dat, recipient);
     }
 
-    public byte[] createSignature(byte[] dat) throws RSAException {
+    public byte[] createSignature(byte[] dat, byte[] recipient) throws RSAException {
         try {
             Signature signature = Signature.getInstance(RSABase.SIGNATURE_ALGORITHM);
             signature.initSign(privateKey);
             signature.update(dat);
-            //signature.update(recipient);
+            signature.update(recipient);
             return signature.sign();
         } catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException ex) {
             Logger.getLogger(RSAKeyPair.class.getName()).log(Level.SEVERE, null, ex);

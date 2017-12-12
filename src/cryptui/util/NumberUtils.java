@@ -28,8 +28,12 @@ public class NumberUtils {
     public static final int byteArrayToInt(byte[] array) {
         return ByteBuffer.wrap(array).getInt();
     }
-    
-    public static final int intFromInputStream(InputStream is) throws IOException{
+
+    public static final int byteArrayToInt(byte[] array, int offset) {
+        return ByteBuffer.wrap(array, offset, 4).getInt();
+    }
+
+    public static final int intFromInputStream(InputStream is) throws IOException {
         byte[] bytes = new byte[4];
         is.read(bytes);
         return byteArrayToInt(bytes);

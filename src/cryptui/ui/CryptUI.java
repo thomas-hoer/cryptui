@@ -18,14 +18,14 @@ package cryptui.ui;
 import cryptui.DataType;
 import cryptui.crypto.KeyStore;
 import cryptui.crypto.asymetric.IEncrypter;
-import cryptui.crypto.asymetric.RSABase;
-import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.crypto.asymetric.RSAException;
 import cryptui.crypto.asymetric.RSAKeyPair;
 import cryptui.crypto.asymetric.RSAPublicKey;
+import cryptui.crypto.container.AESEncryptedData;
+import cryptui.crypto.container.Container;
+import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.crypto.hash.SHA3Hash;
 import cryptui.crypto.symetric.AES;
-import cryptui.crypto.container.AESEncryptedData;
 import cryptui.crypto.symetric.AESException;
 import cryptui.ui.list.DirectoryListRenderer;
 import cryptui.ui.list.FileListRenderer;
@@ -33,6 +33,7 @@ import cryptui.ui.list.KeyListRenderer;
 import static cryptui.util.Assert.assertTrue;
 import cryptui.util.AssertionException;
 import cryptui.util.Base64Util;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -45,7 +46,6 @@ import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -656,13 +656,15 @@ public class CryptUI extends javax.swing.JFrame {
         try (FileOutputStream fos = new FileOutputStream(saveFile)) {
             fos.write(DataType.SENDER_HASH.getNumber());
             fos.write(signingKeyPair.getHash());
+            ByteArrayOutputStream recipients = new ByteArrayOutputStream();
 
             for (IEncrypter rsa : selectedReceiver) {
                 rsaEncryptKey = rsa.encrypt(aes.getKey());
                 rsaEncryptKey.writeToOutputStream(fos);
+                recipients.write(rsa.getHash());
             }
 
-            encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes), bytes));
+            encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, recipients.toByteArray()), bytes));
             encryptedBytes.writeToOutputStream(fos);
         } catch (RSAException | AESException | IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -670,29 +672,14 @@ public class CryptUI extends javax.swing.JFrame {
     }
 
     private void decryptFile(final File openFile, File saveFile) {
-        try (FileInputStream fis = new FileInputStream(openFile)) {
-            DataType rsaType = DataType.fromByte(fis.read());
-            assertTrue(rsaType == DataType.SENDER_HASH);
-            byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
-            fis.read(senderKeyHash);
-            RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
-            RSAKeyPair rsa = KeyStore.getPrivate(encryptedAesKey.getKeyHash());
-            if (rsa == null) {
-                JOptionPane.showMessageDialog(this, "Can not decrypt file. No matching key found.");
-                return;
-            }
-            byte[] aesKey = rsa.decrypt(encryptedAesKey);
-            AESEncryptedData aesEncryptedData = AESEncryptedData.fromInputStream(fis);
-            AES aes = new AES(aesKey);
-            byte[] decryptedData = aes.decrypt(aesEncryptedData);
-            byte[] sign = Arrays.copyOfRange(decryptedData, 0, RSABase.SIGN_LENGTH);
-            byte[] decryptedUseData = Arrays.copyOfRange(decryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
-            IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
-            assertTrue(sender.verifySignature(sign, decryptedUseData, rsa.getHash()));
+        try {
+            Container container = new Container(openFile);
+            assertTrue(container.decrypt());
+            assertTrue(container.verify());
             try (FileOutputStream fos = new FileOutputStream(saveFile)) {
-                fos.write(decryptedUseData);
+                fos.write(container.getDecryptedData());
             }
-        } catch (IOException | AESException | RSAException ex) {
+        } catch (IOException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
