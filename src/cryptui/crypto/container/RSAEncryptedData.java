@@ -17,12 +17,10 @@ package cryptui.crypto.container;
 
 import cryptui.DataType;
 import cryptui.crypto.asymetric.RSABase;
-import cryptui.crypto.hash.SHA3Hash;
 import static cryptui.util.Assert.assertTrue;
 import cryptui.util.Base64Util;
 import cryptui.util.NumberUtils;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 public class RSAEncryptedData {
@@ -51,15 +49,4 @@ public class RSAEncryptedData {
         fos.write(encryptedData);
     }
 
-    public static RSAEncryptedData fromInputStream(InputStream is) throws IOException {
-        DataType rsaType = DataType.fromByte(is.read());
-        assertTrue(rsaType == DataType.RSA_ENCRYPTED_DATA);
-        byte[] encryptedKeyHash = new byte[SHA3Hash.HASH_SIZE];
-        is.read(encryptedKeyHash);
-
-        int encryptedKeyLength = NumberUtils.intFromInputStream(is);
-        byte[] encryptedKeyData = new byte[encryptedKeyLength];
-        is.read(encryptedKeyData);
-        return new RSAEncryptedData(encryptedKeyData, encryptedKeyHash);
-    }
 }

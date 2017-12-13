@@ -127,4 +127,27 @@ public class Container {
     public byte[] getDecryptedData() {
         return decryptedData;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Encrypted for:\n");
+        rsaEncryptedData.forEach((rsaData) -> {
+            IEncrypter rsa = KeyStore.getPublic(rsaData.getKeyHash());
+            if (rsa == null) {
+                builder.append(rsaData.getKeyHash().substring(0, 8));
+            } else {
+                builder.append(rsa.toString());
+            }
+            builder.append("\n");
+        });
+        IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
+        builder.append("\nSigned by:\n");
+        if (sender == null) {
+            builder.append(Base64Util.encodeToString(senderKeyHash).substring(0, 8));
+        } else {
+            builder.append(sender.toString());
+        }
+        return builder.toString();
+    }
 }

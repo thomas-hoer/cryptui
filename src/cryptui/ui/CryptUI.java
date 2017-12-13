@@ -24,7 +24,6 @@ import cryptui.crypto.asymetric.RSAPublicKey;
 import cryptui.crypto.container.AESEncryptedData;
 import cryptui.crypto.container.Container;
 import cryptui.crypto.container.RSAEncryptedData;
-import cryptui.crypto.hash.SHA3Hash;
 import cryptui.crypto.symetric.AES;
 import cryptui.crypto.symetric.AESException;
 import cryptui.ui.list.DirectoryListRenderer;
@@ -32,7 +31,6 @@ import cryptui.ui.list.FileListRenderer;
 import cryptui.ui.list.KeyListRenderer;
 import static cryptui.util.Assert.assertTrue;
 import cryptui.util.AssertionException;
-import cryptui.util.Base64Util;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -69,7 +67,7 @@ public class CryptUI extends javax.swing.JFrame {
             if (selectedIndices.length > 1) {
                 privateKeyList.setSelectedIndex(selectedIndices[0]);
             }
-            signingKeyPair = KeyStore.getPrivateKeyListModel().get(selectedIndices[0]);
+            signingKeyPair = privateKeyList.getSelectedValue();
             usedKey.setText(signingKeyPair.toString());
         });
 
@@ -568,7 +566,7 @@ public class CryptUI extends javax.swing.JFrame {
     }//GEN-LAST:event_decryptFileButtonMouseClicked
 
     private void exportPublicKeyButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_exportPublicKeyButtonMouseClicked
-        RSAKeyPair rsa = KeyStore.getPrivateKeyListModel().getElementAt(privateKeyList.getSelectedIndex());
+        RSAKeyPair rsa = privateKeyList.getSelectedValue();
         RSAPublicKey publicKey = rsa.getPublicKey();
         JFileChooser fileChooser = new JFileChooser();
         int returnVal2 = fileChooser.showSaveDialog(this);
@@ -693,35 +691,14 @@ public class CryptUI extends javax.swing.JFrame {
                 text.append(file.getName());
             }
         } else if (file.isFile()) {
-            try (FileInputStream fis = new FileInputStream(file)) {
-                DataType rsaType = DataType.fromByte(fis.read());
-                assertTrue(rsaType == DataType.SENDER_HASH);
-                byte[] senderKeyHash = new byte[SHA3Hash.HASH_SIZE];
-                fis.read(senderKeyHash);
-
-                RSAEncryptedData encryptedAesKey = RSAEncryptedData.fromInputStream(fis);
-                RSAKeyPair rsa = KeyStore.getPrivate(encryptedAesKey.getKeyHash());
-                IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
-                if (rsa == null) {
-                    text.append("No Key for decryption found.\n");
-                } else {
-                    text.append("Encrypted for ");
-                    text.append(rsa.toString());
-                    text.append("\n");
-                }
-                if (sender == null) {
-                    text.append("Sender ");
-                    text.append(Base64Util.encodeToString(senderKeyHash).substring(0, 8));
-                    text.append(" unknown.\n");
-                } else {
-                    text.append("Signed by ");
-                    text.append(sender.toString());
-                }
-            } catch (AssertionException ex) {
-                text.append(file.getName());
-                text.append(" is not encrypted.");
+            try {
+                Container container = new Container(file);
+                text.append(container.toString());
             } catch (IOException ex) {
                 text.append("Can not open File");
+            } catch (Exception e) {
+                text.append(file.getName());
+                text.append(" is not encrypted.");
             }
         }
         infoBoxText.setText(text.toString());
@@ -772,8 +749,7 @@ public class CryptUI extends javax.swing.JFrame {
             return true;
 
         } catch (AssertionException | RSAException ex) {
-            Logger.getLogger(CryptUI.class
-                    .getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
         return false;
     }

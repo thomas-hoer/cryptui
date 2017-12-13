@@ -20,7 +20,6 @@ import cryptui.crypto.symetric.AES;
 import static cryptui.util.Assert.assertTrue;
 import cryptui.util.NumberUtils;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -53,14 +52,4 @@ public class AESEncryptedData {
         fos.write(data);
     }
 
-    public static AESEncryptedData fromInputStream(InputStream is) throws IOException {
-        DataType aesType = DataType.fromByte(is.read());
-        assertTrue(aesType == DataType.AES_ENCRYPTED_DATA);
-        byte[] iv = new byte[AES.IV_LENGTH];
-        is.read(iv);
-        int encryptedDataLenght = NumberUtils.intFromInputStream(is);
-        byte[] encryptedData = new byte[encryptedDataLenght];
-        is.read(encryptedData);
-        return new AESEncryptedData(iv, encryptedData);
-    }
 }
