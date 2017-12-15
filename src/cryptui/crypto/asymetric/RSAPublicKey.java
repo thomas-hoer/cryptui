@@ -18,18 +18,11 @@ package cryptui.crypto.asymetric;
 import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.DataType;
 import cryptui.crypto.hash.SHA3Hash;
-import static cryptui.util.Assert.assertTrue;
 import cryptui.util.NumberUtils;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 
 public class RSAPublicKey extends RSABase implements IEncrypter {
 
@@ -41,32 +34,6 @@ public class RSAPublicKey extends RSABase implements IEncrypter {
         this.publicKey = publicKey;
         this.salt = salt;
         this.name = generateName(name);
-    }
-
-    public RSAPublicKey(File file) throws RSAException {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
-
-            //TODO: Remove duplication
-            DataType nameType = DataType.fromByte(fis.read());
-            assertTrue(nameType == DataType.OBJECT_NAME);
-            int nameLenght = fis.read();
-            byte[] nameBytes = new byte[nameLenght];
-            fis.read(nameBytes);
-            name = new String(nameBytes, "UTF-8");
-
-            DataType publicType = DataType.fromByte(fis.read());
-            assertTrue(publicType == DataType.PUBLIC_KEY);
-            int publicLenght = NumberUtils.intFromInputStream(fis);
-            byte[] publicKeyData = new byte[publicLenght];
-            fis.read(publicKeyData);
-            this.salt = new byte[RSABase.SALT_LENGTH];
-            fis.read(salt);
-            publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyData));
-
-        } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-            throw new RSAException(e);
-        }
     }
 
     public void saveKeyInFile(File file) throws IOException {

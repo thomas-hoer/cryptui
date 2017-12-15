@@ -18,6 +18,7 @@ package cryptui.ui;
 import cryptui.DataType;
 import cryptui.crypto.KeyStore;
 import cryptui.crypto.asymetric.IEncrypter;
+import cryptui.crypto.asymetric.RSABase;
 import cryptui.crypto.asymetric.RSAException;
 import cryptui.crypto.asymetric.RSAKeyPair;
 import cryptui.crypto.asymetric.RSAPublicKey;
@@ -30,7 +31,6 @@ import cryptui.ui.list.DirectoryListRenderer;
 import cryptui.ui.list.FileListRenderer;
 import cryptui.ui.list.KeyListRenderer;
 import static cryptui.util.Assert.assertTrue;
-import cryptui.util.AssertionException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -71,15 +71,14 @@ public class CryptUI extends javax.swing.JFrame {
             usedKey.setText(signingKeyPair.toString());
         });
 
-        File home = getHomeDirectory();
-        File keyDir = getKeysDirectory(home);
+        File keyDir = getKeysDirectory();
         for (File file : keyDir.listFiles()) {
             if (file.isFile()) {
                 loadKey(file);
             }
         }
 
-        // Start with Encrypten Page if at least 1 private Key exists
+        // Start with Encryption Page if at least 1 private Key exists
         if (!KeyStore.getPrivateKeyListModel().isEmpty()) {
             tabbedPane.setSelectedIndex(1);
         }
@@ -123,14 +122,10 @@ public class CryptUI extends javax.swing.JFrame {
 
     private File getKeysDirectory() {
         File home = getHomeDirectory();
-        return getKeysDirectory(home);
-    }
-
-    private File getKeysDirectory(File home) {
         File[] keys = home.listFiles((d, f) -> "key".equals(f));
         File keyDir;
         if (keys.length == 0) {
-            keyDir = new File(home.getAbsolutePath() + "/key");
+            keyDir = new File(home.getAbsolutePath() + File.pathSeparator + "key");
             keyDir.mkdir();
         } else {
             keyDir = keys[0];
@@ -585,14 +580,9 @@ public class CryptUI extends javax.swing.JFrame {
         int returnVal = fc.showOpenDialog(this);
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            try {
-                File openFile = fc.getSelectedFile();
-                RSAPublicKey publicKey = new RSAPublicKey(openFile);
-                KeyStore.addPublic(publicKey);
-
-            } catch (RSAException ex) {
-                Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            File openFile = fc.getSelectedFile();
+            IEncrypter publicKey = RSABase.fromFile(openFile);
+            KeyStore.addPublic(publicKey);
         }
     }//GEN-LAST:event_importKeyButtonMouseClicked
 
@@ -743,15 +733,17 @@ public class CryptUI extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private boolean loadKey(File file) {
-        try {
-            RSAKeyPair rsa = new RSAKeyPair(file);
-            KeyStore.addPrivate(rsa);
+        IEncrypter rsa = RSABase.fromFile(file);
+        if (rsa != null) {
+            if (rsa instanceof RSAKeyPair) {
+                KeyStore.addPrivate((RSAKeyPair) rsa);
+            } else {
+                KeyStore.addPublic(rsa);
+            }
             return true;
-
-        } catch (AssertionException | RSAException ex) {
-            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        } else {
+            return false;
         }
-        return false;
     }
 
     private File getDecryptionFileFor(File openFile) {

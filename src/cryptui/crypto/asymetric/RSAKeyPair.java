@@ -18,24 +18,17 @@ package cryptui.crypto.asymetric;
 import cryptui.DataType;
 import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.crypto.hash.SHA3Hash;
-import static cryptui.util.Assert.assertTrue;
 import cryptui.util.NumberUtils;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
@@ -60,44 +53,12 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
         this.name = generateName(name);
     }
 
-    public RSAKeyPair(File file) throws RSAException {
-        try (FileInputStream fis = new FileInputStream(file)) {
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
-
-            //TODO: Remove duplication
-            DataType nameType = DataType.fromByte(fis.read());
-            assertTrue(nameType == DataType.OBJECT_NAME);
-            int nameLenght = fis.read();
-            byte[] nameBytes = new byte[nameLenght];
-            fis.read(nameBytes);
-
-            DataType commentType = DataType.fromByte(fis.read());
-            assertTrue(commentType == DataType.DESCRIPTION_SHORT);
-            int commentLenght = fis.read();
-            byte[] commentBytes = new byte[commentLenght];
-            fis.read(commentBytes);
-            comment = new String(commentBytes, "UTF-8");
-
-            DataType privateType = DataType.fromByte(fis.read());
-            assertTrue(privateType == DataType.PRIVATE_KEY);
-            int privateLenght = NumberUtils.intFromInputStream(fis);
-            byte[] privateKeyData = new byte[privateLenght];
-            fis.read(privateKeyData);
-            privateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privateKeyData));
-
-            DataType publicType = DataType.fromByte(fis.read());
-            assertTrue(publicType == DataType.PUBLIC_KEY);
-            int publicLenght = NumberUtils.intFromInputStream(fis);
-            byte[] publicKeyData = new byte[publicLenght];
-            fis.read(publicKeyData);
-            this.salt = new byte[RSABase.SALT_LENGTH];
-            fis.read(salt);
-            publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(publicKeyData));
-
-            name = generateName(new String(nameBytes, "UTF-8"));
-        } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
-            throw new RSAException(e);
-        }
+    public RSAKeyPair(String name, String comment, PrivateKey privateKey, PublicKey publicKey, byte[] salt) {
+        this.comment = comment;
+        this.privateKey = privateKey;
+        this.publicKey = publicKey;
+        this.salt = salt;
+        this.name = name;
     }
 
     public RSAPublicKey getPublicKey() {
