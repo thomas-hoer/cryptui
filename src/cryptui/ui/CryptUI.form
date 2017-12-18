@@ -71,9 +71,8 @@
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                          <Component id="exportPublicKeyButton" max="32767" attributes="0"/>
-                          <Component id="loadKeyButton" max="32767" attributes="0"/>
-                          <Component id="importKeyButton" alignment="0" pref="131" max="32767" attributes="0"/>
+                          <Component id="exportPublicKeyButton" pref="131" max="32767" attributes="0"/>
+                          <Component id="importKeyButton" max="32767" attributes="0"/>
                           <Component id="encryptFileButton" max="32767" attributes="0"/>
                           <Component id="decryptFileButton" max="32767" attributes="0"/>
                       </Group>
@@ -102,8 +101,6 @@
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                           <Group type="102" attributes="0">
-                              <Component id="loadKeyButton" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
                               <Component id="importKeyButton" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="exportPublicKeyButton" min="-2" max="-2" attributes="0"/>
@@ -113,7 +110,7 @@
                               <Component id="decryptFileButton" min="-2" max="-2" attributes="0"/>
                           </Group>
                       </Group>
-                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                      <EmptySpace min="0" pref="90" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -242,17 +239,9 @@
                 </Component>
               </SubComponents>
             </Container>
-            <Component class="javax.swing.JButton" name="loadKeyButton">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Load Key"/>
-              </Properties>
-              <Events>
-                <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="loadKeyButtonMouseClicked"/>
-              </Events>
-            </Component>
             <Component class="javax.swing.JButton" name="importKeyButton">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Import Public Key"/>
+                <Property name="text" type="java.lang.String" value="Import Key"/>
               </Properties>
               <Events>
                 <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="importKeyButtonMouseClicked"/>

@@ -24,4 +24,5 @@ public interface IEncrypter {
     public byte[] getHash();
 
     public boolean verifySignature(byte[] sign, byte[] dat, byte[] recipient) throws RSAException;
+
 }

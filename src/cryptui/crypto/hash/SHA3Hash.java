@@ -16,7 +16,6 @@
 package cryptui.crypto.hash;
 
 import org.bouncycastle.jcajce.provider.digest.SHA3;
-import org.bouncycastle.util.encoders.Hex;
 
 public class SHA3Hash {
 
@@ -25,9 +24,7 @@ public class SHA3Hash {
     public static byte[] hash(byte[] input, byte[] salt) {
         SHA3.DigestSHA3 digestSHA3 = new SHA3.Digest512();
         digestSHA3.update(input);
-        byte[] digest = digestSHA3.digest(salt);
-        System.out.println("SHA3-512 = " + Hex.toHexString(digest));
-        return digest;
+        return digestSHA3.digest(salt);
     }
 
 }

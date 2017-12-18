@@ -69,7 +69,7 @@ public abstract class RSABase {
         }
     }
 
-    public static IEncrypter fromFile(File file) {
+    public static RSABase fromFile(File file) {
         final FileInputStream fis;
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
@@ -186,5 +186,7 @@ public abstract class RSABase {
     }
 
     public abstract byte[] getHash();
+
+    public abstract void saveKeyInFile(File file) throws IOException;
 
 }

@@ -65,6 +65,7 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
         return new RSAPublicKey(publicKey, name, salt);
     }
 
+    @Override
     public void saveKeyInFile(File file) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(DataType.OBJECT_NAME.getNumber());

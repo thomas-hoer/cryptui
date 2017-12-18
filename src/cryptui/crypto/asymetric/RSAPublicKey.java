@@ -15,8 +15,8 @@
  */
 package cryptui.crypto.asymetric;
 
-import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.DataType;
+import cryptui.crypto.container.RSAEncryptedData;
 import cryptui.crypto.hash.SHA3Hash;
 import cryptui.util.NumberUtils;
 import java.io.File;
@@ -36,6 +36,7 @@ public class RSAPublicKey extends RSABase implements IEncrypter {
         this.name = generateName(name);
     }
 
+    @Override
     public void saveKeyInFile(File file) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(DataType.OBJECT_NAME.getNumber());
