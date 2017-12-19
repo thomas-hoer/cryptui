@@ -31,6 +31,9 @@ import cryptui.ui.list.DirectoryListRenderer;
 import cryptui.ui.list.FileListRenderer;
 import cryptui.ui.list.KeyListRenderer;
 import static cryptui.util.Assert.assertTrue;
+import cryptui.util.Base64Util;
+import cryptui.util.UserConfiguration;
+import static cryptui.util.UserConfiguration.getKeysDirectory;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -49,7 +52,8 @@ import org.apache.commons.lang3.ArrayUtils;
 
 public class CryptUI extends javax.swing.JFrame {
 
-    private static File HOME_DIRECTORY;
+    private static final String SELECTED_KEY = "selectedKey";
+
     private final DefaultListModel directoryListModel = new DefaultListModel();
     private final DefaultListModel directoryDetailListModel = new DefaultListModel();
     private final DefaultListModel fileListModel = new DefaultListModel();
@@ -68,6 +72,7 @@ public class CryptUI extends javax.swing.JFrame {
                 privateKeyList.setSelectedIndex(selectedIndices[0]);
             }
             signingKeyPair = privateKeyList.getSelectedValue();
+            UserConfiguration.setProperty(SELECTED_KEY, Base64Util.encodeToString(signingKeyPair.getHash()));
             usedKey.setText(signingKeyPair.toString());
         });
 
@@ -83,11 +88,11 @@ public class CryptUI extends javax.swing.JFrame {
             tabbedPane.setSelectedIndex(1);
         }
 
-        privateKeyList.setSelectedIndex(0);
+        //privateKeyList.setSelectedIndex(0);
         publicKeyList.setSelectedIndex(0);
         File userHome = new File(System.getProperty("user.home"));
         setDirectoryForFileList(userHome);
-
+        privateKeyList.setSelectedValue(KeyStore.getPrivate(UserConfiguration.getProperty(SELECTED_KEY)), true);
     }
 
     private void setDirectoryForFileList(File userHome) {
@@ -120,19 +125,6 @@ public class CryptUI extends javax.swing.JFrame {
         }
     }
 
-    private File getKeysDirectory() {
-        File home = getHomeDirectory();
-        File[] keys = home.listFiles((d, f) -> "key".equals(f));
-        File keyDir;
-        if (keys.length == 0) {
-            keyDir = new File(home.getAbsolutePath() + File.pathSeparator + "key");
-            keyDir.mkdir();
-        } else {
-            keyDir = keys[0];
-        }
-        return keyDir;
-    }
-
     private void setIconImage() {
         try (InputStream in = getClass().getResourceAsStream("/cryptui/ui/logo_ui.png")) {
             byte[] b = IOUtils.toByteArray(in);
@@ -141,33 +133,6 @@ public class CryptUI extends javax.swing.JFrame {
         } catch (IOException e) {
             // Do nothing, its only a ui icon
         }
-    }
-
-    private File getHomeDirectory() {
-        if (HOME_DIRECTORY != null) {
-            return HOME_DIRECTORY;
-        }
-
-        String dir;
-        dir = System.getenv("LOCALAPPDATA");
-        if (dir != null) {
-            File file = new File(dir + "/cryptui");
-            file.mkdir();
-            if (file.exists()) {
-                HOME_DIRECTORY = file;
-                return HOME_DIRECTORY;
-            }
-        }
-        dir = System.getProperty("user.home");
-        if (dir != null) {
-            File file = new File(dir + "/cryptui");
-            file.mkdir();
-            if (file.exists()) {
-                HOME_DIRECTORY = file;
-                return HOME_DIRECTORY;
-            }
-        }
-        return null;
     }
 
     /**
