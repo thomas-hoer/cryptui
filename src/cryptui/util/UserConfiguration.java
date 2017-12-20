@@ -26,11 +26,20 @@ import java.util.logging.Logger;
 
 public class UserConfiguration {
 
+    public static final String SERVER_KEY = "server";
+    public static final String SELECTED_KEY = "selectedKey";
+
+    private static final String SERVER_DEFAULT = "https://cryptui.de";
+
     private static Properties userProperties;
     private static String HOME_DIRECTORY;
 
     public static String getProperty(String key) {
         return getProperties().getProperty(key);
+    }
+
+    private static String getProperty(String key, String defaultValue) {
+        return getProperties().getProperty(key, defaultValue);
     }
 
     public static void setProperty(String key, String value) {
@@ -86,5 +95,9 @@ public class UserConfiguration {
             }
         }
         return null;
+    }
+
+    public static String getServer() {
+        return getProperty(SERVER_KEY, SERVER_DEFAULT);
     }
 }

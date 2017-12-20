@@ -43,14 +43,16 @@ public class Container {
     private byte[] senderKeyHash;
     private List<RSAEncryptedData> rsaEncryptedData = new ArrayList<>();
     private AESEncryptedData aesEncryptedData;
-    private byte[] recipients;
+    private final byte[] recipients;
 
     private byte[] signature;
     private byte[] decryptedData;
 
     public Container(File openFile) throws IOException {
-        final FileInputStream fis = new FileInputStream(openFile);
-        byte[] bytes = IOUtils.toByteArray(fis);
+        byte[] bytes;
+        try (FileInputStream fis = new FileInputStream(openFile)) {
+            bytes = IOUtils.toByteArray(fis);
+        }
         int currentPosition = 0;
         ByteArrayOutputStream recipientsBuilder = new ByteArrayOutputStream();
         while (currentPosition < bytes.length) {

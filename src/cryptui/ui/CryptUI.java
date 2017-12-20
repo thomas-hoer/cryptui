@@ -32,6 +32,7 @@ import cryptui.ui.list.FileListRenderer;
 import cryptui.ui.list.KeyListRenderer;
 import static cryptui.util.Assert.assertTrue;
 import cryptui.util.Base64Util;
+import cryptui.util.MultipartUtility;
 import cryptui.util.UserConfiguration;
 import static cryptui.util.UserConfiguration.getKeysDirectory;
 import java.io.ByteArrayOutputStream;
@@ -40,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -51,8 +53,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class CryptUI extends javax.swing.JFrame {
-
-    private static final String SELECTED_KEY = "selectedKey";
 
     private final DefaultListModel directoryListModel = new DefaultListModel();
     private final DefaultListModel directoryDetailListModel = new DefaultListModel();
@@ -72,7 +72,7 @@ public class CryptUI extends javax.swing.JFrame {
                 privateKeyList.setSelectedIndex(selectedIndices[0]);
             }
             signingKeyPair = privateKeyList.getSelectedValue();
-            UserConfiguration.setProperty(SELECTED_KEY, Base64Util.encodeToString(signingKeyPair.getHash()));
+            UserConfiguration.setProperty(UserConfiguration.SELECTED_KEY, Base64Util.encodeToString(signingKeyPair.getHash()));
             usedKey.setText(signingKeyPair.toString());
         });
 
@@ -92,7 +92,7 @@ public class CryptUI extends javax.swing.JFrame {
         publicKeyList.setSelectedIndex(0);
         File userHome = new File(System.getProperty("user.home"));
         setDirectoryForFileList(userHome);
-        privateKeyList.setSelectedValue(KeyStore.getPrivate(UserConfiguration.getProperty(SELECTED_KEY)), true);
+        privateKeyList.setSelectedValue(KeyStore.getPrivate(UserConfiguration.getProperty(UserConfiguration.SELECTED_KEY)), true);
     }
 
     private void setDirectoryForFileList(File userHome) {
@@ -166,6 +166,8 @@ public class CryptUI extends javax.swing.JFrame {
         privateKeyList = new javax.swing.JList<>();
         encryptFileButton = new javax.swing.JButton();
         decryptFileButton = new javax.swing.JButton();
+        settingsButton = new javax.swing.JButton();
+        exportToServerButton = new javax.swing.JButton();
         fileManagementTab = new javax.swing.JPanel();
         usedKey = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
@@ -290,6 +292,20 @@ public class CryptUI extends javax.swing.JFrame {
             }
         });
 
+        settingsButton.setText("Settings");
+        settingsButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                settingsButtonMouseClicked(evt);
+            }
+        });
+
+        exportToServerButton.setText("Export to Server");
+        exportToServerButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportToServerButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout keyManagementTabLayout = new javax.swing.GroupLayout(keyManagementTab);
         keyManagementTab.setLayout(keyManagementTabLayout);
         keyManagementTabLayout.setHorizontalGroup(
@@ -309,7 +325,9 @@ public class CryptUI extends javax.swing.JFrame {
                     .addComponent(exportPublicKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, 131, Short.MAX_VALUE)
                     .addComponent(importKeyButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(encryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(decryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(decryptFileButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(settingsButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(exportToServerButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(187, Short.MAX_VALUE))
@@ -336,7 +354,11 @@ public class CryptUI extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(encryptFileButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(decryptFileButton)))
+                        .addComponent(decryptFileButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(settingsButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(exportToServerButton)))
                 .addGap(0, 90, Short.MAX_VALUE))
         );
 
@@ -582,6 +604,30 @@ public class CryptUI extends javax.swing.JFrame {
         showInfo(file);
     }//GEN-LAST:event_fileListMouseClicked
 
+    private Settings settings;
+    private void settingsButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_settingsButtonMouseClicked
+        settings = new Settings();
+        settings.setVisible(true);
+    }//GEN-LAST:event_settingsButtonMouseClicked
+
+    private void exportToServerButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportToServerButtonActionPerformed
+        try {
+            RSAKeyPair rsa = privateKeyList.getSelectedValue();
+            RSAPublicKey publicKey = rsa.getPublicKey();
+            File file = File.createTempFile("temp_", ".pubkey");
+            publicKey.saveKeyInFile(file);
+            String httpsURL = UserConfiguration.getServer() + "/upload.php";
+            MultipartUtility multipart = new MultipartUtility(httpsURL);
+            multipart.addFormField("submit", "true");
+            multipart.addFilePart("fileToUpload", file);
+            multipart.finish();
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_exportToServerButtonActionPerformed
+
     private void encryptFile(File openFile, File saveFile) {
         byte[] bytes;
         try (final FileInputStream fis = new FileInputStream(openFile)) {
@@ -656,6 +702,7 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JLabel encryptFor;
     private javax.swing.JButton encryptSelectedFile;
     private javax.swing.JButton exportPublicKeyButton;
+    private javax.swing.JButton exportToServerButton;
     private javax.swing.JList<String> fileList;
     private javax.swing.JPanel fileManagementTab;
     private javax.swing.JButton importKeyButton;
@@ -680,6 +727,7 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JRadioButton newKeyTypeRadioRSA;
     private javax.swing.JList<RSAKeyPair> privateKeyList;
     private javax.swing.JList<IEncrypter> publicKeyList;
+    private javax.swing.JButton settingsButton;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JLabel usedKey;
     // End of variables declaration//GEN-END:variables
