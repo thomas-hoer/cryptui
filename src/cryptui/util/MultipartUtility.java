@@ -78,7 +78,6 @@ public class MultipartUtility {
             outputStream.write(bytes);
             outputStream.flush();
         }
-        writer.append(LINE_FEED);
     }
 
     public String finish() throws IOException {
@@ -89,6 +88,7 @@ public class MultipartUtility {
         if (status == HttpURLConnection.HTTP_OK) {
             try (InputStream stream = httpConn.getInputStream()) {
                 String result = IOUtils.toString(stream, Charset.defaultCharset());
+                System.out.println(result);
                 httpConn.disconnect();
                 return result;
             }
