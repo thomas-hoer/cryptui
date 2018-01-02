@@ -180,6 +180,10 @@ public class CryptUI extends javax.swing.JFrame {
         directoryList = new javax.swing.JList<>();
         jScrollPane6 = new javax.swing.JScrollPane();
         fileList = new javax.swing.JList<>();
+        jScrollPane7 = new javax.swing.JScrollPane();
+        encryptForList = new javax.swing.JList<>();
+        encryptForLabel = new javax.swing.JLabel();
+        encryptAndUploadButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Crypt UI");
@@ -426,6 +430,13 @@ public class CryptUI extends javax.swing.JFrame {
         });
         jScrollPane6.setViewportView(fileList);
 
+        encryptForList.setModel(KeyStore.getPublicKeyListModel());
+        jScrollPane7.setViewportView(encryptForList);
+
+        encryptForLabel.setText("Encrypt For:");
+
+        encryptAndUploadButton.setText("Encrypt and Upload");
+
         javax.swing.GroupLayout fileManagementTabLayout = new javax.swing.GroupLayout(fileManagementTab);
         fileManagementTab.setLayout(fileManagementTabLayout);
         fileManagementTabLayout.setHorizontalGroup(
@@ -435,12 +446,17 @@ public class CryptUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(encryptSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+                    .addComponent(usedKey, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+                    .addComponent(decryptSelectedFile, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+                    .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+                    .addComponent(encryptAndUploadButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(encryptSelectedFile, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(usedKey, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(decryptSelectedFile, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(261, Short.MAX_VALUE))
+                    .addComponent(encryptForLabel)
+                    .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(128, Short.MAX_VALUE))
             .addComponent(jScrollPane5)
         );
         fileManagementTabLayout.setVerticalGroup(
@@ -450,11 +466,17 @@ public class CryptUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(fileManagementTabLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(fileManagementTabLayout.createSequentialGroup()
+                        .addComponent(encryptForLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane7))
+                    .addGroup(fileManagementTabLayout.createSequentialGroup()
                         .addComponent(usedKey)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(encryptSelectedFile)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(decryptSelectedFile)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(encryptAndUploadButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jScrollPane4)
                         .addContainerGap())
@@ -637,7 +659,7 @@ public class CryptUI extends javax.swing.JFrame {
             return;
         }
         AES aes = new AES();
-        List<IEncrypter> selectedReceiver = publicKeyList.getSelectedValuesList();
+        List<IEncrypter> selectedReceiver = encryptForList.getSelectedValuesList();
         AESEncryptedData encryptedBytes;
         RSAEncryptedData rsaEncryptKey;
         try (FileOutputStream fos = new FileOutputStream(saveFile)) {
@@ -698,8 +720,11 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JButton decryptSelectedFile;
     private javax.swing.JList<String> directoryDetailList;
     private javax.swing.JList<String> directoryList;
+    private javax.swing.JButton encryptAndUploadButton;
     private javax.swing.JButton encryptFileButton;
     private javax.swing.JLabel encryptFor;
+    private javax.swing.JLabel encryptForLabel;
+    private javax.swing.JList<IEncrypter> encryptForList;
     private javax.swing.JButton encryptSelectedFile;
     private javax.swing.JButton exportPublicKeyButton;
     private javax.swing.JButton exportToServerButton;
@@ -715,6 +740,7 @@ public class CryptUI extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane6;
+    private javax.swing.JScrollPane jScrollPane7;
     private javax.swing.JPanel keyManagementTab;
     private javax.swing.JButton newKeyButton;
     private javax.swing.JTextField newKeyComment;
