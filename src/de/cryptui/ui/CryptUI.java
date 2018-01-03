@@ -37,7 +37,6 @@ import de.cryptui.util.UserConfiguration;
 import static de.cryptui.util.UserConfiguration.getKeysDirectory;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +49,8 @@ import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -552,8 +553,8 @@ public class CryptUI extends javax.swing.JFrame {
             int returnVal2 = fc2.showSaveDialog(this);
             if (returnVal2 == JFileChooser.APPROVE_OPTION) {
                 File saveFile = fc2.getSelectedFile();
-                try (FileOutputStream fileOutputStream = new FileOutputStream(saveFile)) {
-                    encryptFile(openFile, fileOutputStream);
+                try {
+                    encryptFile(openFile, saveFile);
                 } catch (IOException | RSAException | AESException ex) {
                     Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -605,8 +606,8 @@ public class CryptUI extends javax.swing.JFrame {
         if (openFile == null || saveFile == null) {
             return;
         }
-        try (FileOutputStream fileOutputStream = new FileOutputStream(saveFile)) {
-            encryptFile(openFile, fileOutputStream);
+        try {
+            encryptFile(openFile, saveFile);
         } catch (IOException | RSAException | AESException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -661,12 +662,13 @@ public class CryptUI extends javax.swing.JFrame {
         }
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             encryptFile(openFile, byteArrayOutputStream);
-
-            String httpsURL = UserConfiguration.getServer() + "/upload.php";
-            MultipartUtility multipart = new MultipartUtility(httpsURL);
-            multipart.addFormField("submit", "true");
-            multipart.addFilePart("fileToUpload", "file", byteArrayOutputStream.toByteArray());
-            multipart.finish();
+            if (byteArrayOutputStream.size() > 0) {
+                String httpsURL = UserConfiguration.getServer() + "/upload.php";
+                MultipartUtility multipart = new MultipartUtility(httpsURL);
+                multipart.addFormField("submit", "true");
+                multipart.addFilePart("fileToUpload", "file", byteArrayOutputStream.toByteArray());
+                multipart.finish();
+            }
 
         } catch (IOException | RSAException | AESException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -685,22 +687,30 @@ public class CryptUI extends javax.swing.JFrame {
         return null;
     }
 
-    private void encryptFile(File openFile, OutputStream outputStream) throws IOException, RSAException, AESException {
-        byte[] bytes;
-        try (final FileInputStream fis = new FileInputStream(openFile)) {
-            bytes = IOUtils.toByteArray(fis);
-        } catch (IOException ex) {
-            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+    private void encryptFile(File openFile, File saveFile) throws IOException, RSAException, AESException {
+        if (!checkRecipients()) {
             return;
         }
+        try (FileOutputStream fileOutputStream = new FileOutputStream(saveFile)) {
+            encryptFile(openFile, fileOutputStream);
+        } catch (IOException | RSAException | AESException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void encryptFile(File openFile, OutputStream outputStream) throws IOException, RSAException, AESException {
+        if (!checkRecipients()) {
+            return;
+        }
+        byte[] bytes = FileUtils.readFileToByteArray(openFile);
         AES aes = new AES();
-        List<IEncrypter> selectedReceiver = encryptForList.getSelectedValuesList();
         AESEncryptedData encryptedBytes;
         RSAEncryptedData rsaEncryptKey;
         outputStream.write(DataType.SENDER_HASH.getNumber());
         outputStream.write(signingKeyPair.getHash());
         ByteArrayOutputStream recipients = new ByteArrayOutputStream();
 
+        List<IEncrypter> selectedReceiver = encryptForList.getSelectedValuesList();
         for (IEncrypter rsa : selectedReceiver) {
             rsaEncryptKey = rsa.encrypt(aes.getKey());
             rsaEncryptKey.writeToOutputStream(outputStream);
@@ -709,6 +719,21 @@ public class CryptUI extends javax.swing.JFrame {
 
         encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, recipients.toByteArray()), bytes));
         encryptedBytes.writeToOutputStream(outputStream);
+    }
+
+    /**
+     * Checks the number of recipients and shows a waring dialog if none are
+     * selected.
+     *
+     * @return true if at least one recipient is selected
+     */
+    private boolean checkRecipients() {
+        List<IEncrypter> selectedReceiver = encryptForList.getSelectedValuesList();
+        if (selectedReceiver.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "You have to select at least recipient.");
+            return false;
+        }
+        return true;
     }
 
     private void decryptFile(final File openFile, File saveFile) {
