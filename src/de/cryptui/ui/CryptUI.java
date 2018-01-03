@@ -607,7 +607,11 @@ public class CryptUI extends javax.swing.JFrame {
             return;
         }
         try {
-            encryptFile(openFile, saveFile);
+            boolean success = encryptFile(openFile, saveFile);
+            if (success) {
+                int selectedIndex = fileList.getSelectedIndex();
+                fileListModel.add(selectedIndex + 1, saveFile);
+            }
         } catch (IOException | RSAException | AESException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -687,20 +691,21 @@ public class CryptUI extends javax.swing.JFrame {
         return null;
     }
 
-    private void encryptFile(File openFile, File saveFile) throws IOException, RSAException, AESException {
+    private boolean encryptFile(File openFile, File saveFile) throws IOException, RSAException, AESException {
         if (!checkRecipients()) {
-            return;
+            return false;
         }
         try (FileOutputStream fileOutputStream = new FileOutputStream(saveFile)) {
-            encryptFile(openFile, fileOutputStream);
+            return encryptFile(openFile, fileOutputStream);
         } catch (IOException | RSAException | AESException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return false;
     }
 
-    private void encryptFile(File openFile, OutputStream outputStream) throws IOException, RSAException, AESException {
+    private boolean encryptFile(File openFile, OutputStream outputStream) throws IOException, RSAException, AESException {
         if (!checkRecipients()) {
-            return;
+            return false;
         }
         byte[] bytes = FileUtils.readFileToByteArray(openFile);
         AES aes = new AES();
@@ -719,6 +724,7 @@ public class CryptUI extends javax.swing.JFrame {
 
         encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, recipients.toByteArray()), bytes));
         encryptedBytes.writeToOutputStream(outputStream);
+        return true;
     }
 
     /**
