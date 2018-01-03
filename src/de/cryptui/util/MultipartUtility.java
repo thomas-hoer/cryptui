@@ -16,7 +16,6 @@
 package de.cryptui.util;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,7 +26,10 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  *
@@ -38,7 +40,7 @@ public class MultipartUtility {
     private static final String LINE_FEED = "\r\n";
 
     private final Map<String, String> fields = new HashMap<>();
-    private final Map<String, File> files = new HashMap<>();
+    private final Map<String, Pair<String, byte[]>> files = new HashMap<>();
     private final String requestURL;
 
     public MultipartUtility(String requestURL) {
@@ -49,8 +51,13 @@ public class MultipartUtility {
         fields.put(name, value);
     }
 
-    public void addFilePart(String fieldName, File uploadFile) {
-        files.put(fieldName, uploadFile);
+    public void addFilePart(String fieldName, File uploadFile) throws IOException {
+        byte[] fileData = FileUtils.readFileToByteArray(uploadFile);
+        files.put(fieldName, new ImmutablePair<>(uploadFile.getName(), fileData));
+    }
+
+    public void addFilePart(String fieldName, String fileName, byte[] fileData) {
+        files.put(fieldName, new ImmutablePair<>(fileName, fileData));
     }
 
     public String finish() throws IOException {
@@ -75,34 +82,30 @@ public class MultipartUtility {
                 writer.append(value);
                 writer.append(LINE_FEED);
             });
-            for (Map.Entry<String, File> file : files.entrySet()) {
-                File uploadFile = file.getValue();
-                String fileName = uploadFile.getName();
+            for (Map.Entry<String, Pair<String, byte[]>> file : files.entrySet()) {
+                Pair<String, byte[]> uploadFile = file.getValue();
+                String fileName = uploadFile.getLeft();
                 writer.append("--" + boundary).append(LINE_FEED);
                 writer.append("Content-Disposition: form-data; name=\"" + file.getKey() + "\"; filename=\"" + fileName + "\"").append(LINE_FEED);
                 writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(fileName)).append(LINE_FEED);
                 writer.append("Content-Transfer-Encoding: binary").append(LINE_FEED).append(LINE_FEED);
                 writer.flush();
-                try (FileInputStream inputStream = new FileInputStream(uploadFile)) {
-                    byte[] bytes = IOUtils.toByteArray(inputStream);
-                    outputStream.write(bytes);
-                    outputStream.flush();
-                }
-                writer.append(LINE_FEED).flush();
+                outputStream.write(uploadFile.getRight());
+                outputStream.flush();
+                writer.append(LINE_FEED);
             }
             writer.append("--" + boundary + "--").append(LINE_FEED);
-            writer.close();
-            int status = httpConn.getResponseCode();
-            if (status == HttpURLConnection.HTTP_OK) {
-                try (InputStream stream = httpConn.getInputStream()) {
-                    String result = IOUtils.toString(stream, Charset.defaultCharset());
-                    System.out.println(result);
-                    httpConn.disconnect();
-                    return result;
-                }
-            } else {
-                throw new IOException("Server returned non-OK status: " + status);
+        }
+        int status = httpConn.getResponseCode();
+        if (status == HttpURLConnection.HTTP_OK) {
+            try (InputStream stream = httpConn.getInputStream()) {
+                String result = IOUtils.toString(stream, Charset.defaultCharset());
+                System.out.println(result);
+                httpConn.disconnect();
+                return result;
             }
+        } else {
+            throw new IOException("Server returned non-OK status: " + status);
         }
     }
 }

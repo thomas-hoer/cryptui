@@ -41,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.List;
@@ -436,6 +437,11 @@ public class CryptUI extends javax.swing.JFrame {
         encryptForLabel.setText("Encrypt For:");
 
         encryptAndUploadButton.setText("Encrypt and Upload");
+        encryptAndUploadButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                encryptAndUploadButtonMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout fileManagementTabLayout = new javax.swing.GroupLayout(fileManagementTab);
         fileManagementTab.setLayout(fileManagementTabLayout);
@@ -546,7 +552,11 @@ public class CryptUI extends javax.swing.JFrame {
             int returnVal2 = fc2.showSaveDialog(this);
             if (returnVal2 == JFileChooser.APPROVE_OPTION) {
                 File saveFile = fc2.getSelectedFile();
-                encryptFile(openFile, saveFile);
+                try (FileOutputStream fileOutputStream = new FileOutputStream(saveFile)) {
+                    encryptFile(openFile, fileOutputStream);
+                } catch (IOException | RSAException | AESException ex) {
+                    Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
     }//GEN-LAST:event_encryptFileButtonMouseClicked
@@ -584,29 +594,22 @@ public class CryptUI extends javax.swing.JFrame {
     }//GEN-LAST:event_exportPublicKeyButtonMouseClicked
 
     private void decryptSelectedFileMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_decryptSelectedFileMouseClicked
-        int selectedIndex = fileList.getSelectedIndex();
-        if (selectedIndex < 0) {
-            return;
-        }
-        File openFile = (File) fileListModel.get(selectedIndex);
-        if (!openFile.isFile()) {
-            return;
-        }
+        File openFile = getSelectedFile();
         File saveFile = getDecryptionFileFor(openFile);
         decryptFile(openFile, saveFile);
     }//GEN-LAST:event_decryptSelectedFileMouseClicked
 
     private void encryptSelectedFileMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_encryptSelectedFileMouseClicked
-        int selectedIndex = fileList.getSelectedIndex();
-        if (selectedIndex < 0) {
-            return;
-        }
-        File openFile = (File) fileListModel.get(selectedIndex);
-        if (!openFile.isFile()) {
-            return;
-        }
+        File openFile = getSelectedFile();
         File saveFile = getEncryptionFileFor(openFile);
-        encryptFile(openFile, saveFile);
+        if (openFile == null || saveFile == null) {
+            return;
+        }
+        try (FileOutputStream fileOutputStream = new FileOutputStream(saveFile)) {
+            encryptFile(openFile, fileOutputStream);
+        } catch (IOException | RSAException | AESException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }//GEN-LAST:event_encryptSelectedFileMouseClicked
 
     private void directoryDetailListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_directoryDetailListMouseClicked
@@ -643,6 +646,7 @@ public class CryptUI extends javax.swing.JFrame {
             multipart.addFormField("submit", "true");
             multipart.addFilePart("fileToUpload", file);
             multipart.finish();
+            file.delete();
         } catch (MalformedURLException ex) {
             Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
@@ -650,7 +654,38 @@ public class CryptUI extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_exportToServerButtonActionPerformed
 
-    private void encryptFile(File openFile, File saveFile) {
+    private void encryptAndUploadButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_encryptAndUploadButtonMouseClicked
+        File openFile = getSelectedFile();
+        if (openFile == null) {
+            return;
+        }
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            encryptFile(openFile, byteArrayOutputStream);
+
+            String httpsURL = UserConfiguration.getServer() + "/upload.php";
+            MultipartUtility multipart = new MultipartUtility(httpsURL);
+            multipart.addFormField("submit", "true");
+            multipart.addFilePart("fileToUpload", "file", byteArrayOutputStream.toByteArray());
+            multipart.finish();
+
+        } catch (IOException | RSAException | AESException ex) {
+            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_encryptAndUploadButtonMouseClicked
+
+    private File getSelectedFile() {
+        int selectedIndex = fileList.getSelectedIndex();
+        if (selectedIndex < 0) {
+            return null;
+        }
+        File openFile = (File) fileListModel.get(selectedIndex);
+        if (openFile.isFile()) {
+            return openFile;
+        }
+        return null;
+    }
+
+    private void encryptFile(File openFile, OutputStream outputStream) throws IOException, RSAException, AESException {
         byte[] bytes;
         try (final FileInputStream fis = new FileInputStream(openFile)) {
             bytes = IOUtils.toByteArray(fis);
@@ -662,25 +697,24 @@ public class CryptUI extends javax.swing.JFrame {
         List<IEncrypter> selectedReceiver = encryptForList.getSelectedValuesList();
         AESEncryptedData encryptedBytes;
         RSAEncryptedData rsaEncryptKey;
-        try (FileOutputStream fos = new FileOutputStream(saveFile)) {
-            fos.write(DataType.SENDER_HASH.getNumber());
-            fos.write(signingKeyPair.getHash());
-            ByteArrayOutputStream recipients = new ByteArrayOutputStream();
+        outputStream.write(DataType.SENDER_HASH.getNumber());
+        outputStream.write(signingKeyPair.getHash());
+        ByteArrayOutputStream recipients = new ByteArrayOutputStream();
 
-            for (IEncrypter rsa : selectedReceiver) {
-                rsaEncryptKey = rsa.encrypt(aes.getKey());
-                rsaEncryptKey.writeToOutputStream(fos);
-                recipients.write(rsa.getHash());
-            }
-
-            encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, recipients.toByteArray()), bytes));
-            encryptedBytes.writeToOutputStream(fos);
-        } catch (RSAException | AESException | IOException ex) {
-            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
+        for (IEncrypter rsa : selectedReceiver) {
+            rsaEncryptKey = rsa.encrypt(aes.getKey());
+            rsaEncryptKey.writeToOutputStream(outputStream);
+            recipients.write(rsa.getHash());
         }
+
+        encryptedBytes = aes.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, recipients.toByteArray()), bytes));
+        encryptedBytes.writeToOutputStream(outputStream);
     }
 
     private void decryptFile(final File openFile, File saveFile) {
+        if (openFile == null || saveFile == null) {
+            return;
+        }
         try {
             Container container = new Container(openFile);
             assertTrue(container.decrypt());
@@ -772,6 +806,9 @@ public class CryptUI extends javax.swing.JFrame {
     }
 
     private File getDecryptionFileFor(File openFile) {
+        if (openFile == null) {
+            return null;
+        }
         String fileName = openFile.getPath();
         if (fileName.endsWith(".asc")) {
             fileName = fileName.substring(0, fileName.length() - 4);
@@ -797,6 +834,9 @@ public class CryptUI extends javax.swing.JFrame {
     }
 
     private File getEncryptionFileFor(File openFile) {
+        if (openFile == null) {
+            return null;
+        }
         File newFile = new File(openFile.getPath() + ".asc");
         if (!newFile.exists()) {
             return newFile;
