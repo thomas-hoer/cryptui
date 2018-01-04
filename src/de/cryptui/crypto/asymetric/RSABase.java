@@ -179,7 +179,7 @@ public abstract class RSABase {
 
     protected final String generateName(String suggestedName) {
         if (StringUtils.isEmpty(suggestedName)) {
-            return Base64Util.encodeToString(getHash()).substring(0, 8);
+            return Base64Util.encodeToString(getHash()).substring(0, 16);
         } else {
             return suggestedName;
         }
