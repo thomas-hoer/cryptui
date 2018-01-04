@@ -777,6 +777,9 @@ public class CryptUI extends javax.swing.JFrame {
                 text.append(" is not encrypted.");
             }
         }
+        text.append("\n");
+        text.append(file.length());
+        text.append(" Bytes");
         infoBoxText.setText(text.toString());
     }
 
