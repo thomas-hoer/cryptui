@@ -16,6 +16,18 @@
  */
 package de.cryptui.crypto.container;
 
+import de.cryptui.DataType;
+import de.cryptui.crypto.KeyStore;
+import de.cryptui.crypto.asymetric.AbstractRSAKey;
+import de.cryptui.crypto.asymetric.IEncrypter;
+import de.cryptui.crypto.asymetric.RSAException;
+import de.cryptui.crypto.asymetric.RSAKeyPair;
+import de.cryptui.crypto.hash.SHA3Hash;
+import de.cryptui.crypto.symetric.AES;
+import de.cryptui.crypto.symetric.AESException;
+import de.cryptui.util.Base64Util;
+import de.cryptui.util.NumberUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,23 +40,9 @@ import java.util.logging.Logger;
 
 import org.apache.commons.io.IOUtils;
 
-import de.cryptui.DataType;
-import de.cryptui.crypto.KeyStore;
-import de.cryptui.crypto.asymetric.IEncrypter;
-import de.cryptui.crypto.asymetric.RSABase;
-import de.cryptui.crypto.asymetric.RSAException;
-import de.cryptui.crypto.asymetric.RSAKeyPair;
-import de.cryptui.crypto.hash.SHA3Hash;
-import de.cryptui.crypto.symetric.AES;
-import de.cryptui.crypto.symetric.AESException;
-import de.cryptui.util.AssertionException;
-import de.cryptui.util.Base64Util;
-import de.cryptui.util.NumberUtils;
-
 public class Container {
 
 	private static final Logger LOGGER = Logger.getLogger(Container.class.getName());
-	private static final int SIZE_OF_INT_IN_BYTES = 4;
 	private byte[] senderKeyHash;
 	private final List<RSAEncryptedData> rsaEncryptedData = new ArrayList<>();
 	private AESEncryptedData aesEncryptedData;
@@ -53,7 +51,7 @@ public class Container {
 	private byte[] signature;
 	private byte[] decryptedData;
 
-	public Container(final File openFile) throws IOException {
+	public Container(final File openFile) throws IOException, DecryptionException {
 		byte[] bytes;
 		try (FileInputStream fis = new FileInputStream(openFile)) {
 			bytes = IOUtils.toByteArray(fis);
@@ -94,7 +92,7 @@ public class Container {
 				break;
 
 			default:
-				throw new AssertionException();
+				throw new DecryptionException();
 			}
 		}
 		this.recipients = recipientsBuilder.toByteArray();
@@ -109,8 +107,9 @@ public class Container {
 					final AES aes = new AES(aesKey);
 					decryptedData = aes.decrypt(aesEncryptedData);
 					final byte[] aesDecryptedData = aes.decrypt(aesEncryptedData);
-					signature = Arrays.copyOfRange(aesDecryptedData, 0, RSABase.SIGN_LENGTH);
-					decryptedData = Arrays.copyOfRange(aesDecryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
+					signature = Arrays.copyOfRange(aesDecryptedData, 0, AbstractRSAKey.SIGN_LENGTH);
+					decryptedData = Arrays.copyOfRange(aesDecryptedData, AbstractRSAKey.SIGN_LENGTH,
+							decryptedData.length);
 					return true;
 				} catch (RSAException | AESException ex) {
 					LOGGER.log(Level.SEVERE, null, ex);

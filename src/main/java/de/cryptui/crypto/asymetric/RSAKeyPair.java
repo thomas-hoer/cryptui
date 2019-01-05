@@ -16,6 +16,11 @@
  */
 package de.cryptui.crypto.asymetric;
 
+import de.cryptui.DataType;
+import de.cryptui.crypto.container.RSAEncryptedData;
+import de.cryptui.crypto.hash.SHA3Hash;
+import de.cryptui.util.NumberUtils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -35,14 +40,11 @@ import javax.crypto.IllegalBlockSizeException;
 
 import org.apache.commons.lang3.StringUtils;
 
-import de.cryptui.DataType;
-import de.cryptui.crypto.container.RSAEncryptedData;
-import de.cryptui.crypto.hash.SHA3Hash;
-import de.cryptui.util.NumberUtils;
+public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 
-public class RSAKeyPair extends RSABase implements IEncrypter {
-
+	private static final long serialVersionUID = -5002230889389879796L;
 	private static final Logger LOGGER = Logger.getLogger(RSAKeyPair.class.getName());
+
 	private final String name;
 	private final String comment;
 	private final PrivateKey privateKey;
@@ -143,7 +145,7 @@ public class RSAKeyPair extends RSABase implements IEncrypter {
 
 	public byte[] createSignature(final byte[] dat, final byte[] recipient) throws RSAException {
 		try {
-			final Signature signature = Signature.getInstance(RSABase.SIGNATURE_ALGORITHM);
+			final Signature signature = Signature.getInstance(AbstractRSAKey.SIGNATURE_ALGORITHM);
 			signature.initSign(privateKey);
 			signature.update(dat);
 			signature.update(recipient);

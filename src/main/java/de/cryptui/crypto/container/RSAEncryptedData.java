@@ -18,13 +18,13 @@ package de.cryptui.crypto.container;
 
 import static de.cryptui.util.Assert.assertTrue;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 import de.cryptui.DataType;
-import de.cryptui.crypto.asymetric.RSABase;
+import de.cryptui.crypto.asymetric.AbstractRSAKey;
 import de.cryptui.util.Base64Util;
 import de.cryptui.util.NumberUtils;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 public class RSAEncryptedData {
 
@@ -32,7 +32,7 @@ public class RSAEncryptedData {
 	private final byte[] keyHash;
 
 	public RSAEncryptedData(final byte[] encryptedData, final byte[] keyHash) {
-		assertTrue(encryptedData.length == RSABase.KEY_LENGHT_BYTES);
+		assertTrue(encryptedData.length == AbstractRSAKey.KEY_LENGHT_BYTES);
 		this.encryptedData = encryptedData;
 		this.keyHash = keyHash;
 	}

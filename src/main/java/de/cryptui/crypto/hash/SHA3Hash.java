@@ -18,12 +18,12 @@ package de.cryptui.crypto.hash;
 
 import org.bouncycastle.jcajce.provider.digest.SHA3;
 
-public class SHA3Hash {
+public final class SHA3Hash {
+
+	public static final int HASH_SIZE = 64;
 
 	private SHA3Hash() {
 	}
-
-	public static final int HASH_SIZE = 64;
 
 	public static byte[] hash(final byte[] input, final byte[] salt) {
 		final SHA3.DigestSHA3 digestSHA3 = new SHA3.Digest512();

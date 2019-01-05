@@ -23,7 +23,7 @@ import org.junit.Test;
 public class NumberUtilsTest {
 
 	@Test
-	public void intToByteArrayTest1() {
+	public void testIntToByteArray() {
 		final int number = 123456789;
 		final byte[] bytes = NumberUtils.intToByteArray(number);
 		final int encodedNumber = NumberUtils.byteArrayToInt(bytes);
@@ -31,7 +31,7 @@ public class NumberUtilsTest {
 	}
 
 	@Test
-	public void intToByteArrayTest2() {
+	public void testIntToByteArray2() {
 		final byte[] bytes = NumberUtils.intToByteArray(0xFFF9F3F0);
 		assertEquals((byte) 0xFF, bytes[0]);
 		assertEquals((byte) 0xF9, bytes[1]);
@@ -40,7 +40,7 @@ public class NumberUtilsTest {
 	}
 
 	@Test
-	public void intToByteArrayTest() {
+	public void testByteArrayToInt() {
 		final byte[] bytes = { (byte) 0x45, (byte) 0xF1, (byte) 0x44, (byte) 0xFF };
 		final int number = NumberUtils.byteArrayToInt(bytes);
 		assertEquals(0x45F144FF, number);

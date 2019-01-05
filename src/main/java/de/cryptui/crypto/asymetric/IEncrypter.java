@@ -16,9 +16,9 @@
  */
 package de.cryptui.crypto.asymetric;
 
-import java.io.Serializable;
-
 import de.cryptui.crypto.container.RSAEncryptedData;
+
+import java.io.Serializable;
 
 public interface IEncrypter extends Serializable {
 

@@ -24,12 +24,9 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class UserConfiguration {
+public final class UserConfiguration {
 
 	private static final Logger LOGGER = Logger.getLogger(UserConfiguration.class.getName());
-
-	private UserConfiguration() {
-	}
 
 	public static final String SERVER_KEY = "server";
 	public static final String SELECTED_KEY = "selectedKey";
@@ -38,6 +35,9 @@ public class UserConfiguration {
 
 	private static Properties userProperties;
 	private static String homeDirectory;
+
+	private UserConfiguration() {
+	}
 
 	public static String getProperty(final String key) {
 		return getProperties().getProperty(key);
@@ -49,7 +49,7 @@ public class UserConfiguration {
 
 	public static void setProperty(final String key, final String value) {
 		getProperties().put(key, value);
-		try (final FileWriter fileWriter = new FileWriter(getHomeDirectory() + File.separator + "config.properties");) {
+		try (final FileWriter fileWriter = new FileWriter(getHomeDirectory() + File.separator + "config.properties")) {
 			getProperties().store(fileWriter, "");
 		} catch (final IOException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
@@ -61,7 +61,7 @@ public class UserConfiguration {
 			return userProperties;
 		}
 		userProperties = new Properties();
-		try (final FileReader fileReader = new FileReader(getHomeDirectory() + File.separator + "config.properties");) {
+		try (final FileReader fileReader = new FileReader(getHomeDirectory() + File.separator + "config.properties")) {
 			userProperties.load(fileReader);
 		} catch (final IOException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);

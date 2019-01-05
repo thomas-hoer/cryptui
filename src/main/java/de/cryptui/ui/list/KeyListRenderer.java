@@ -16,6 +16,8 @@
  */
 package de.cryptui.ui.list;
 
+import de.cryptui.crypto.asymetric.RSAKeyPair;
+
 import java.awt.Component;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,8 +29,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JList;
 
 import org.apache.commons.io.IOUtils;
-
-import de.cryptui.crypto.asymetric.RSAKeyPair;
 
 public class KeyListRenderer extends DefaultListCellRenderer {
 

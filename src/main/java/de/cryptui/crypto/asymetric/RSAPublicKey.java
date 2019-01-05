@@ -16,17 +16,19 @@
  */
 package de.cryptui.crypto.asymetric;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.security.PublicKey;
-
 import de.cryptui.DataType;
 import de.cryptui.crypto.container.RSAEncryptedData;
 import de.cryptui.crypto.hash.SHA3Hash;
 import de.cryptui.util.NumberUtils;
 
-public class RSAPublicKey extends RSABase implements IEncrypter {
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.PublicKey;
+
+public class RSAPublicKey extends AbstractRSAKey implements IEncrypter {
+
+	private static final long serialVersionUID = -8946272597440918123L;
 
 	private final PublicKey publicKey;
 	private final byte[] salt;

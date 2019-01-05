@@ -16,13 +16,13 @@
  */
 package de.cryptui.util;
 
+import de.cryptui.DataType;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
-
-import de.cryptui.DataType;
 
 public final class GZip {
 
@@ -41,8 +41,8 @@ public final class GZip {
 			LOGGER.log(Level.SEVERE, null, ex);
 		}
 		final byte[] compressed = obj.toByteArray();
-		LOGGER.log(Level.INFO, "Compressed from {0} to {1} ({2}%)",
-				new Object[] { input.length, compressed.length, compressed.length * PERCENT_MULTIPLICATOR / input.length });
+		LOGGER.log(Level.INFO, "Compressed from {0} to {1} ({2}%)", new Object[] { input.length, compressed.length,
+				compressed.length * PERCENT_MULTIPLICATOR / input.length });
 		if (compressed.length < input.length) {
 			return compressed;
 		}

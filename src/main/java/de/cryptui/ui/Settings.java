@@ -16,12 +16,12 @@
  */
 package de.cryptui.ui;
 
+import de.cryptui.util.UserConfiguration;
+
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
-
-import de.cryptui.util.UserConfiguration;
 
 public class Settings extends javax.swing.JFrame {
 
@@ -30,7 +30,7 @@ public class Settings extends javax.swing.JFrame {
 	private JTextField serverTextField;
 
 	/**
-	 * Creates new form Settings
+	 * Creates new form for the Settings.
 	 */
 	public Settings() {
 		initComponents();

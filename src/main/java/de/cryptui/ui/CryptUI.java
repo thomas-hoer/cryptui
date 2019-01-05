@@ -19,6 +19,26 @@ package de.cryptui.ui;
 import static de.cryptui.util.Assert.assertTrue;
 import static de.cryptui.util.UserConfiguration.getKeysDirectory;
 
+import de.cryptui.DataType;
+import de.cryptui.crypto.KeyStore;
+import de.cryptui.crypto.asymetric.AbstractRSAKey;
+import de.cryptui.crypto.asymetric.IEncrypter;
+import de.cryptui.crypto.asymetric.RSAException;
+import de.cryptui.crypto.asymetric.RSAKeyPair;
+import de.cryptui.crypto.asymetric.RSAPublicKey;
+import de.cryptui.crypto.container.AESEncryptedData;
+import de.cryptui.crypto.container.Container;
+import de.cryptui.crypto.container.DecryptionException;
+import de.cryptui.crypto.container.RSAEncryptedData;
+import de.cryptui.crypto.symetric.AES;
+import de.cryptui.crypto.symetric.AESException;
+import de.cryptui.ui.list.DirectoryListRenderer;
+import de.cryptui.ui.list.FileListRenderer;
+import de.cryptui.ui.list.KeyListRenderer;
+import de.cryptui.util.Base64Util;
+import de.cryptui.util.MultipartUtility;
+import de.cryptui.util.UserConfiguration;
+
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.ByteArrayOutputStream;
@@ -55,25 +75,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
-import de.cryptui.DataType;
-import de.cryptui.crypto.KeyStore;
-import de.cryptui.crypto.asymetric.IEncrypter;
-import de.cryptui.crypto.asymetric.RSABase;
-import de.cryptui.crypto.asymetric.RSAException;
-import de.cryptui.crypto.asymetric.RSAKeyPair;
-import de.cryptui.crypto.asymetric.RSAPublicKey;
-import de.cryptui.crypto.container.AESEncryptedData;
-import de.cryptui.crypto.container.Container;
-import de.cryptui.crypto.container.RSAEncryptedData;
-import de.cryptui.crypto.symetric.AES;
-import de.cryptui.crypto.symetric.AESException;
-import de.cryptui.ui.list.DirectoryListRenderer;
-import de.cryptui.ui.list.FileListRenderer;
-import de.cryptui.ui.list.KeyListRenderer;
-import de.cryptui.util.Base64Util;
-import de.cryptui.util.MultipartUtility;
-import de.cryptui.util.UserConfiguration;
-
+@SuppressWarnings("squid:S4142")
 public class CryptUI extends JFrame {
 
 	private static final long serialVersionUID = -4482400391222382424L;
@@ -96,7 +98,7 @@ public class CryptUI extends JFrame {
 	private JLabel usedKey;
 
 	/**
-	 * Creates new form CryptUI
+	 * Creates new form CryptUI.
 	 */
 	public CryptUI() {
 		initComponents();
@@ -534,7 +536,7 @@ public class CryptUI extends JFrame {
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			final File file = fc.getSelectedFile();
-			final RSABase rsa = loadKey(file);
+			final AbstractRSAKey rsa = loadKey(file);
 			if (rsa != null) {
 
 				final File keysDir = getKeysDirectory();
@@ -653,7 +655,7 @@ public class CryptUI extends JFrame {
 		showInfo(file);
 	}
 
-	private void settingsButtonMouseClicked() {
+	private static void settingsButtonMouseClicked() {
 		final Settings settings = new Settings();
 		settings.setVisible(true);
 	}
@@ -727,12 +729,11 @@ public class CryptUI extends JFrame {
 		}
 		final byte[] bytes = FileUtils.readFileToByteArray(openFile);
 		final AES aes = new AES();
-		AESEncryptedData encryptedBytes;
-		RSAEncryptedData rsaEncryptKey;
 		outputStream.write(DataType.SENDER_HASH.getNumber());
 		outputStream.write(signingKeyPair.getHash());
 		final ByteArrayOutputStream recipients = new ByteArrayOutputStream();
 
+		RSAEncryptedData rsaEncryptKey;
 		final List<IEncrypter> selectedReceiver = encryptForList.getSelectedValuesList();
 		for (final IEncrypter rsa : selectedReceiver) {
 			rsaEncryptKey = rsa.encrypt(aes.getKey());
@@ -740,7 +741,7 @@ public class CryptUI extends JFrame {
 			recipients.write(rsa.getHash());
 		}
 
-		encryptedBytes = aes
+		final AESEncryptedData encryptedBytes = aes
 				.encrypt(ArrayUtils.addAll(signingKeyPair.createSignature(bytes, recipients.toByteArray()), bytes));
 		encryptedBytes.writeToOutputStream(outputStream);
 		return true;
@@ -761,7 +762,7 @@ public class CryptUI extends JFrame {
 		return true;
 	}
 
-	private void decryptFile(final File openFile, final File saveFile) {
+	private static void decryptFile(final File openFile, final File saveFile) {
 		if (openFile == null || saveFile == null) {
 			return;
 		}
@@ -774,17 +775,16 @@ public class CryptUI extends JFrame {
 			}
 		} catch (final IOException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
+		} catch (final DecryptionException e) {
+			LOGGER.log(Level.SEVERE, null, e);
+			// TODO Inform user
 		}
 	}
 
 	public void showInfo(final File file) {
 		final StringBuilder text = new StringBuilder();
 		if (file.isDirectory()) {
-			try {
-				text.append(file.getCanonicalFile().getName());
-			} catch (final IOException e) {
-				text.append(file.getName());
-			}
+			text.append(getCanonicalFile(file).getName());
 		} else if (file.isFile()) {
 			try {
 				final Container container = new Container(file);
@@ -792,7 +792,8 @@ public class CryptUI extends JFrame {
 			} catch (final IOException ex) {
 				LOGGER.log(Level.WARNING, "Can not open File " + file.getName(), ex);
 				text.append("Can not open File");
-			} catch (final RuntimeException e) {
+			} catch (final DecryptionException e) {
+				LOGGER.log(Level.FINE, "File " + file.getName() + " is not a enrypted container", e);
 				text.append(file.getName());
 				text.append(" is not encrypted.");
 			}
@@ -803,8 +804,8 @@ public class CryptUI extends JFrame {
 		infoBoxText.setText(text.toString());
 	}
 
-	private static RSABase loadKey(final File file) {
-		final RSABase rsa = RSABase.fromFile(file);
+	private static AbstractRSAKey loadKey(final File file) {
+		final AbstractRSAKey rsa = AbstractRSAKey.fromFile(file);
 		if (rsa != null) {
 			if (rsa instanceof RSAKeyPair) {
 				KeyStore.addPrivate((RSAKeyPair) rsa);

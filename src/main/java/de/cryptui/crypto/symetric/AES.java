@@ -18,6 +18,8 @@ package de.cryptui.crypto.symetric;
 
 import static de.cryptui.util.Assert.assertTrue;
 
+import de.cryptui.crypto.container.AESEncryptedData;
+
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -34,8 +36,6 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.util.Arrays;
-
-import de.cryptui.crypto.container.AESEncryptedData;
 
 public class AES {
 

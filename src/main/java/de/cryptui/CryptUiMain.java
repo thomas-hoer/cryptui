@@ -16,18 +16,18 @@
  */
 package de.cryptui;
 
+import de.cryptui.ui.CryptUI;
+
 import java.security.Security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import de.cryptui.ui.CryptUI;
-
 public class CryptUiMain {
 
 	/**
+	 * Main to start the Program.
+	 *
 	 * @param args the command line arguments
-	 * @throws java.security.GeneralSecurityException
-	 * @throws java.io.UnsupportedEncodingException
 	 */
 	public static void main(final String[] args) {
 		Security.addProvider(new BouncyCastleProvider());

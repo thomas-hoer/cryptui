@@ -31,6 +31,7 @@ public enum DataType {
 			numberToType.put((int) dataType.getNumber(), dataType);
 		}
 	}
+
 	private final byte number;
 
 	DataType(final int number) {

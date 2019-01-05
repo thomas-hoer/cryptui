@@ -18,12 +18,12 @@ package de.cryptui.crypto.container;
 
 import static de.cryptui.util.Assert.assertTrue;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
 import de.cryptui.DataType;
 import de.cryptui.crypto.symetric.AES;
 import de.cryptui.util.NumberUtils;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 public class AESEncryptedData {
 
