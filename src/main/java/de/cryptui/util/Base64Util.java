@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +18,20 @@ package de.cryptui.util;
 
 import java.util.Base64;
 
-public class Base64Util {
+public final class Base64Util {
 
-    public static byte[] encode(byte[] src) {
-        return Base64.getEncoder().encode(src);
-    }
-    
-    public static String encodeToString(byte[] src) {
-        return Base64.getEncoder().encodeToString(src);
-    }
+	private Base64Util() {
+	}
 
-    public static byte[] decode(byte[] src) {
-        return Base64.getDecoder().decode(src);
-    }
+	public static byte[] encode(final byte[] src) {
+		return Base64.getEncoder().encode(src);
+	}
+
+	public static String encodeToString(final byte[] src) {
+		return Base64.getEncoder().encodeToString(src);
+	}
+
+	public static byte[] decode(final byte[] src) {
+		return Base64.getDecoder().decode(src);
+	}
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,51 +16,52 @@
  */
 package de.cryptui.crypto;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.DefaultListModel;
+
 import de.cryptui.crypto.asymetric.IEncrypter;
 import de.cryptui.crypto.asymetric.RSAKeyPair;
 import de.cryptui.util.Base64Util;
-import java.util.HashMap;
-import java.util.Map;
-import javax.swing.DefaultListModel;
 
-/**
- *
- * @author Ich
- */
-public class KeyStore {
+public final class KeyStore {
 
-    private static final Map<String, RSAKeyPair> KEY_MAP = new HashMap<>();
-    private static final Map<String, IEncrypter> PUBLIC_KEY_MAP = new HashMap<>();
+	private static final Map<String, RSAKeyPair> KEY_MAP = new HashMap<>();
+	private static final Map<String, IEncrypter> PUBLIC_KEY_MAP = new HashMap<>();
 
-    private static final DefaultListModel<IEncrypter> publicKeyListModel = new DefaultListModel<>();
-    private static final DefaultListModel<RSAKeyPair> privateKeyListModel = new DefaultListModel<>();
+	private static final DefaultListModel<IEncrypter> publicKeyListModel = new DefaultListModel<>();
+	private static final DefaultListModel<RSAKeyPair> privateKeyListModel = new DefaultListModel<>();
 
-    public static void addPublic(IEncrypter publicKey) {
-        PUBLIC_KEY_MAP.put(Base64Util.encodeToString(publicKey.getHash()), publicKey);
-        publicKeyListModel.addElement(publicKey);
-    }
+	private KeyStore() {
+	}
 
-    public static void addPrivate(RSAKeyPair keyPair) {
-        final String keyHash = Base64Util.encodeToString(keyPair.getHash());
-        KEY_MAP.put(keyHash, keyPair);
-        privateKeyListModel.addElement(keyPair);
-        PUBLIC_KEY_MAP.put(keyHash, keyPair);
-        publicKeyListModel.addElement(keyPair);
-    }
+	public static void addPublic(final IEncrypter publicKey) {
+		PUBLIC_KEY_MAP.put(Base64Util.encodeToString(publicKey.getHash()), publicKey);
+		publicKeyListModel.addElement(publicKey);
+	}
 
-    public static RSAKeyPair getPrivate(String keyHash) {
-        return KEY_MAP.get(keyHash);
-    }
+	public static void addPrivate(final RSAKeyPair keyPair) {
+		final String keyHash = Base64Util.encodeToString(keyPair.getHash());
+		KEY_MAP.put(keyHash, keyPair);
+		privateKeyListModel.addElement(keyPair);
+		PUBLIC_KEY_MAP.put(keyHash, keyPair);
+		publicKeyListModel.addElement(keyPair);
+	}
 
-    public static IEncrypter getPublic(String keyHash) {
-        return PUBLIC_KEY_MAP.get(keyHash);
-    }
+	public static RSAKeyPair getPrivate(final String keyHash) {
+		return KEY_MAP.get(keyHash);
+	}
 
-    public static DefaultListModel<IEncrypter> getPublicKeyListModel() {
-        return publicKeyListModel;
-    }
+	public static IEncrypter getPublic(final String keyHash) {
+		return PUBLIC_KEY_MAP.get(keyHash);
+	}
 
-    public static DefaultListModel<RSAKeyPair> getPrivateKeyListModel() {
-        return privateKeyListModel;
-    }
+	public static DefaultListModel<IEncrypter> getPublicKeyListModel() {
+		return publicKeyListModel;
+	}
+
+	public static DefaultListModel<RSAKeyPair> getPrivateKeyListModel() {
+		return privateKeyListModel;
+	}
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,30 +16,37 @@
  */
 package de.cryptui.util;
 
-import de.cryptui.DataType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
-public class GZip {
+import de.cryptui.DataType;
 
-    public static byte[] compress(byte[] input) {
-        ByteArrayOutputStream obj = new ByteArrayOutputStream();
-        obj.write(DataType.GZIP.getNumber());
-        try (GZIPOutputStream gzip = new GZIPOutputStream(obj)) {
-            gzip.write(input);
-            gzip.close();
-            byte[] compressed = obj.toByteArray();
-            System.out.println("Compressed from " + input.length + " to " + compressed.length + " ( " + (compressed.length * 100 / input.length) + "%)");
-            if (compressed.length < input.length) {
-                return compressed;
-            }
-        } catch (IOException ex) {
-            Logger.getLogger(GZip.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return input;
-    }
+public final class GZip {
+
+	private static final int PERCENT_MULTIPLICATOR = 100;
+	private static final Logger LOGGER = Logger.getLogger(GZip.class.getName());
+
+	private GZip() {
+	}
+
+	public static byte[] compress(final byte[] input) {
+		final ByteArrayOutputStream obj = new ByteArrayOutputStream();
+		obj.write(DataType.GZIP.getNumber());
+		try (GZIPOutputStream gzip = new GZIPOutputStream(obj)) {
+			gzip.write(input);
+		} catch (final IOException ex) {
+			LOGGER.log(Level.SEVERE, null, ex);
+		}
+		final byte[] compressed = obj.toByteArray();
+		LOGGER.log(Level.INFO, "Compressed from {0} to {1} ({2}%)",
+				new Object[] { input.length, compressed.length, compressed.length * PERCENT_MULTIPLICATOR / input.length });
+		if (compressed.length < input.length) {
+			return compressed;
+		}
+		return input;
+	}
 
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +20,15 @@ import org.bouncycastle.jcajce.provider.digest.SHA3;
 
 public class SHA3Hash {
 
-    public static final int HASH_SIZE = 64;
+	private SHA3Hash() {
+	}
 
-    public static byte[] hash(byte[] input, byte[] salt) {
-        SHA3.DigestSHA3 digestSHA3 = new SHA3.Digest512();
-        digestSHA3.update(input);
-        return digestSHA3.digest(salt);
-    }
+	public static final int HASH_SIZE = 64;
+
+	public static byte[] hash(final byte[] input, final byte[] salt) {
+		final SHA3.DigestSHA3 digestSHA3 = new SHA3.Digest512();
+		digestSHA3.update(input);
+		return digestSHA3.digest(salt);
+	}
 
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,23 +20,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-public class NumberUtils {
+public final class NumberUtils {
 
-    public static final byte[] intToByteArray(int value) {
-        return ByteBuffer.allocate(4).putInt(value).array();
-    }
+	public static final int SIZE_OF_INT_IN_BYTES = 4;
 
-    public static final int byteArrayToInt(byte[] array) {
-        return ByteBuffer.wrap(array).getInt();
-    }
+	private NumberUtils() {
+	}
 
-    public static final int byteArrayToInt(byte[] array, int offset) {
-        return ByteBuffer.wrap(array, offset, 4).getInt();
-    }
+	public static byte[] intToByteArray(final int value) {
+		return ByteBuffer.allocate(SIZE_OF_INT_IN_BYTES).putInt(value).array();
+	}
 
-    public static final int intFromInputStream(InputStream is) throws IOException {
-        byte[] bytes = new byte[4];
-        is.read(bytes);
-        return byteArrayToInt(bytes);
-    }
+	public static int byteArrayToInt(final byte[] array) {
+		return ByteBuffer.wrap(array).getInt();
+	}
+
+	public static int byteArrayToInt(final byte[] array, final int offset) {
+		return ByteBuffer.wrap(array, offset, SIZE_OF_INT_IN_BYTES).getInt();
+	}
+
+	public static int intFromInputStream(final InputStream inputStream) throws IOException {
+		final byte[] bytes = new byte[SIZE_OF_INT_IN_BYTES];
+		final int numBytes = inputStream.read(bytes);
+		if (numBytes == SIZE_OF_INT_IN_BYTES) {
+			return byteArrayToInt(bytes);
+		} else {
+			throw new IOException("Not able to read 4 bytes in File stream");
+		}
+	}
 }

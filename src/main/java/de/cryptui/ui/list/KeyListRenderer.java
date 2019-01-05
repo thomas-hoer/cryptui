@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,47 +16,53 @@
  */
 package de.cryptui.ui.list;
 
-import de.cryptui.crypto.asymetric.RSAKeyPair;
 import java.awt.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.ImageIcon;
 import javax.swing.JList;
+
 import org.apache.commons.io.IOUtils;
+
+import de.cryptui.crypto.asymetric.RSAKeyPair;
 
 public class KeyListRenderer extends DefaultListCellRenderer {
 
-    private ImageIcon keyPairIcon;
-    private ImageIcon publicKeyIcon;
+	private static final Logger LOGGER = Logger.getLogger(KeyListRenderer.class.getName());
+	private static final long serialVersionUID = 3826152589439909614L;
+	private ImageIcon keyPairIcon;
+	private ImageIcon publicKeyIcon;
 
-    public KeyListRenderer() {
-        try (InputStream in = KeyListRenderer.class.getResourceAsStream("/de/cryptui/ui/list/key_pair.png")) {
-            byte[] b = IOUtils.toByteArray(in);
-            keyPairIcon = new ImageIcon(b);
-        } catch (IOException ex) {
-            Logger.getLogger(KeyListRenderer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        try (InputStream in = KeyListRenderer.class.getResourceAsStream("/de/cryptui/ui/list/public_key.png")) {
-            byte[] b = IOUtils.toByteArray(in);
-            publicKeyIcon = new ImageIcon(b);
-        } catch (IOException ex) {
-            Logger.getLogger(KeyListRenderer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+	public KeyListRenderer() {
+		try (InputStream in = KeyListRenderer.class.getResourceAsStream("/de/cryptui/ui/list/key_pair.png")) {
+			final byte[] b = IOUtils.toByteArray(in);
+			keyPairIcon = new ImageIcon(b);
+		} catch (final IOException ex) {
+			LOGGER.log(Level.SEVERE, null, ex);
+		}
+		try (InputStream in = KeyListRenderer.class.getResourceAsStream("/de/cryptui/ui/list/public_key.png")) {
+			final byte[] b = IOUtils.toByteArray(in);
+			publicKeyIcon = new ImageIcon(b);
+		} catch (final IOException ex) {
+			LOGGER.log(Level.SEVERE, null, ex);
+		}
+	}
 
-    @Override
-    public Component getListCellRendererComponent(JList list, Object value, int index, boolean selected, boolean expanded) {
-        super.getListCellRendererComponent(list, value, index, selected, expanded);
+	@Override
+	public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index,
+			final boolean selected, final boolean expanded) {
+		super.getListCellRendererComponent(list, value, index, selected, expanded);
 
-        if (value instanceof RSAKeyPair) {
-            setIcon(keyPairIcon);
-        } else {
-            setIcon(publicKeyIcon);
-        }
+		if (value instanceof RSAKeyPair) {
+			setIcon(keyPairIcon);
+		} else {
+			setIcon(publicKeyIcon);
+		}
 
-        return this;
-    }
+		return this;
+	}
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,30 +18,36 @@ package de.cryptui.ui.list;
 
 import java.awt.Component;
 import java.io.File;
+
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JList;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class DirectoryListRenderer extends DefaultListCellRenderer {
 
-    private final JButton button;
+	private static final int STRING_SHORTENING_SIZE = 10;
+	private static final int STRING_SHORTENING_TRESHOLD = 12;
+	private static final long serialVersionUID = -4254080701019359280L;
+	private final JButton button;
 
-    public DirectoryListRenderer() {
-        button = new JButton();
-    }
+	public DirectoryListRenderer() {
+		button = new JButton();
+	}
 
-    @Override
-    public Component getListCellRendererComponent(JList list, Object value, int index, boolean selected, boolean expanded) {
-        File file = (File) value;
-        String text = file.getName();
-        if (StringUtils.isEmpty(text)) {
-            text = file.toString();
-        }
-        if (text.length() > 12) {
-            text = text.substring(0, 10) + "...";
-        }
-        button.setText(text);
-        return button;
-    }
+	@Override
+	public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index,
+			final boolean selected, final boolean expanded) {
+		final File file = (File) value;
+		String text = file.getName();
+		if (StringUtils.isEmpty(text)) {
+			text = file.toString();
+		}
+		if (text.length() > STRING_SHORTENING_TRESHOLD) {
+			text = text.substring(0, STRING_SHORTENING_SIZE) + "...";
+		}
+		button.setText(text);
+		return button;
+	}
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,27 +16,23 @@
  */
 package de.cryptui;
 
-import de.cryptui.ui.CryptUI;
-import java.io.UnsupportedEncodingException;
-import java.security.GeneralSecurityException;
 import java.security.Security;
+
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-/**
- *
- * @author thomas-hoer
- */
+import de.cryptui.ui.CryptUI;
+
 public class CryptUiMain {
 
-    /**
-     * @param args the command line arguments
-     * @throws java.security.GeneralSecurityException
-     * @throws java.io.UnsupportedEncodingException
-     */
-    public static void main(String[] args) throws GeneralSecurityException, UnsupportedEncodingException {
-        Security.addProvider(new BouncyCastleProvider());
-        java.awt.EventQueue.invokeLater(() -> new CryptUI().setVisible(true));
+	/**
+	 * @param args the command line arguments
+	 * @throws java.security.GeneralSecurityException
+	 * @throws java.io.UnsupportedEncodingException
+	 */
+	public static void main(final String[] args) {
+		Security.addProvider(new BouncyCastleProvider());
+		java.awt.EventQueue.invokeLater(() -> new CryptUI().setVisible(true));
 
-    }
+	}
 
 }

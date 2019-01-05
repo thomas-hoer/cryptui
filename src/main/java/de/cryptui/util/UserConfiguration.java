@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +16,6 @@
  */
 package de.cryptui.util;
 
-import de.cryptui.ui.CryptUI;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -26,78 +26,83 @@ import java.util.logging.Logger;
 
 public class UserConfiguration {
 
-    public static final String SERVER_KEY = "server";
-    public static final String SELECTED_KEY = "selectedKey";
+	private static final Logger LOGGER = Logger.getLogger(UserConfiguration.class.getName());
 
-    private static final String SERVER_DEFAULT = "https://cryptui.de";
+	private UserConfiguration() {
+	}
 
-    private static Properties userProperties;
-    private static String HOME_DIRECTORY;
+	public static final String SERVER_KEY = "server";
+	public static final String SELECTED_KEY = "selectedKey";
 
-    public static String getProperty(String key) {
-        return getProperties().getProperty(key);
-    }
+	private static final String SERVER_DEFAULT = "https://cryptui.de";
 
-    private static String getProperty(String key, String defaultValue) {
-        return getProperties().getProperty(key, defaultValue);
-    }
+	private static Properties userProperties;
+	private static String homeDirectory;
 
-    public static void setProperty(String key, String value) {
-        getProperties().put(key, value);
-        try (final FileWriter fileWriter = new FileWriter(getHomeDirectory() + File.separator + "config.properties");) {
-            getProperties().store(fileWriter, "");
-        } catch (IOException ex) {
-            Logger.getLogger(UserConfiguration.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+	public static String getProperty(final String key) {
+		return getProperties().getProperty(key);
+	}
 
-    private static Properties getProperties() {
-        if (userProperties != null) {
-            return userProperties;
-        }
-        userProperties = new Properties();
-        try (final FileReader fileReader = new FileReader(getHomeDirectory() + File.separator + "config.properties");) {
-            userProperties.load(fileReader);
-        } catch (IOException ex) {
-            Logger.getLogger(CryptUI.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return userProperties;
-    }
+	private static String getProperty(final String key, final String defaultValue) {
+		return getProperties().getProperty(key, defaultValue);
+	}
 
-    public static File getKeysDirectory() {
-        String home = getHomeDirectory();
-        File keyDir = new File(home + File.separator + "key");
-        keyDir.mkdir();
-        return keyDir;
-    }
+	public static void setProperty(final String key, final String value) {
+		getProperties().put(key, value);
+		try (final FileWriter fileWriter = new FileWriter(getHomeDirectory() + File.separator + "config.properties");) {
+			getProperties().store(fileWriter, "");
+		} catch (final IOException ex) {
+			LOGGER.log(Level.SEVERE, null, ex);
+		}
+	}
 
-    private static String getHomeDirectory() {
-        if (HOME_DIRECTORY != null) {
-            return HOME_DIRECTORY;
-        }
+	private static Properties getProperties() {
+		if (userProperties != null) {
+			return userProperties;
+		}
+		userProperties = new Properties();
+		try (final FileReader fileReader = new FileReader(getHomeDirectory() + File.separator + "config.properties");) {
+			userProperties.load(fileReader);
+		} catch (final IOException ex) {
+			LOGGER.log(Level.SEVERE, null, ex);
+		}
+		return userProperties;
+	}
 
-        String dir = System.getenv("LOCALAPPDATA");
-        if (dir != null) {
-            File file = new File(dir + File.separator + "cryptui");
-            file.mkdir();
-            if (file.exists()) {
-                HOME_DIRECTORY = file.getAbsolutePath();
-                return HOME_DIRECTORY;
-            }
-        }
-        dir = System.getProperty("user.home");
-        if (dir != null) {
-            File file = new File(dir + File.separator + "cryptui");
-            file.mkdir();
-            if (file.exists()) {
-                HOME_DIRECTORY = file.getAbsolutePath();
-                return HOME_DIRECTORY;
-            }
-        }
-        return null;
-    }
+	public static File getKeysDirectory() {
+		final String home = getHomeDirectory();
+		final File keyDir = new File(home + File.separator + "key");
+		keyDir.mkdir();
+		return keyDir;
+	}
 
-    public static String getServer() {
-        return getProperty(SERVER_KEY, SERVER_DEFAULT);
-    }
+	private static String getHomeDirectory() {
+		if (homeDirectory != null) {
+			return homeDirectory;
+		}
+
+		String dir = System.getenv("LOCALAPPDATA");
+		if (dir != null) {
+			final File file = new File(dir + File.separator + "cryptui");
+			file.mkdir();
+			if (file.exists()) {
+				homeDirectory = file.getAbsolutePath();
+				return homeDirectory;
+			}
+		}
+		dir = System.getProperty("user.home");
+		if (dir != null) {
+			final File file = new File(dir + File.separator + "cryptui");
+			file.mkdir();
+			if (file.exists()) {
+				homeDirectory = file.getAbsolutePath();
+				return homeDirectory;
+			}
+		}
+		return null;
+	}
+
+	public static String getServer() {
+		return getProperty(SERVER_KEY, SERVER_DEFAULT);
+	}
 }

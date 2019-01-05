@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +16,18 @@
  */
 package de.cryptui.crypto.container;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.apache.commons.io.IOUtils;
+
 import de.cryptui.DataType;
 import de.cryptui.crypto.KeyStore;
 import de.cryptui.crypto.asymetric.IEncrypter;
@@ -27,129 +40,124 @@ import de.cryptui.crypto.symetric.AESException;
 import de.cryptui.util.AssertionException;
 import de.cryptui.util.Base64Util;
 import de.cryptui.util.NumberUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.apache.commons.io.IOUtils;
 
 public class Container {
 
-    private byte[] senderKeyHash;
-    private List<RSAEncryptedData> rsaEncryptedData = new ArrayList<>();
-    private AESEncryptedData aesEncryptedData;
-    private final byte[] recipients;
+	private static final Logger LOGGER = Logger.getLogger(Container.class.getName());
+	private static final int SIZE_OF_INT_IN_BYTES = 4;
+	private byte[] senderKeyHash;
+	private final List<RSAEncryptedData> rsaEncryptedData = new ArrayList<>();
+	private AESEncryptedData aesEncryptedData;
+	private final byte[] recipients;
 
-    private byte[] signature;
-    private byte[] decryptedData;
+	private byte[] signature;
+	private byte[] decryptedData;
 
-    public Container(File openFile) throws IOException {
-        byte[] bytes;
-        try (FileInputStream fis = new FileInputStream(openFile)) {
-            bytes = IOUtils.toByteArray(fis);
-        }
-        int currentPosition = 0;
-        ByteArrayOutputStream recipientsBuilder = new ByteArrayOutputStream();
-        while (currentPosition < bytes.length) {
-            DataType dataType = DataType.fromByte(bytes[currentPosition]);
-            currentPosition++;
-            switch (dataType) {
-                case SENDER_HASH: {
-                    senderKeyHash = Arrays.copyOfRange(bytes, currentPosition, currentPosition + SHA3Hash.HASH_SIZE);
-                    currentPosition += SHA3Hash.HASH_SIZE;
-                    break;
-                }
-                case RSA_ENCRYPTED_DATA: {
-                    byte[] encryptedKeyHash = Arrays.copyOfRange(bytes, currentPosition, currentPosition + SHA3Hash.HASH_SIZE);
-                    currentPosition += SHA3Hash.HASH_SIZE;
-                    int encryptedKeyLength = NumberUtils.byteArrayToInt(bytes, currentPosition);
-                    currentPosition += 4;
-                    byte[] encryptedKeyData = Arrays.copyOfRange(bytes, currentPosition, currentPosition + encryptedKeyLength);
-                    currentPosition += encryptedKeyLength;
-                    rsaEncryptedData.add(new RSAEncryptedData(encryptedKeyData, encryptedKeyHash));
-                    recipientsBuilder.write(encryptedKeyHash);
-                    break;
-                }
-                case AES_ENCRYPTED_DATA: {
-                    byte[] iv = Arrays.copyOfRange(bytes, currentPosition, currentPosition + AES.IV_LENGTH);
-                    currentPosition += AES.IV_LENGTH;
-                    int encryptedDataLenght = NumberUtils.byteArrayToInt(bytes, currentPosition);
-                    currentPosition += 4;
-                    byte[] encryptedData = Arrays.copyOfRange(bytes, currentPosition, currentPosition + encryptedDataLenght);
-                    currentPosition += encryptedDataLenght;
-                    aesEncryptedData = new AESEncryptedData(iv, encryptedData);
-                    break;
-                }
-                default:
-                    throw new AssertionException();
-            }
-        }
-        this.recipients = recipientsBuilder.toByteArray();
-    }
+	public Container(final File openFile) throws IOException {
+		byte[] bytes;
+		try (FileInputStream fis = new FileInputStream(openFile)) {
+			bytes = IOUtils.toByteArray(fis);
+		}
+		int currentPosition = 0;
+		final ByteArrayOutputStream recipientsBuilder = new ByteArrayOutputStream();
+		while (currentPosition < bytes.length) {
+			final DataType dataType = DataType.fromByte(bytes[currentPosition]);
+			currentPosition++;
+			switch (dataType) {
+			case SENDER_HASH:
+				senderKeyHash = Arrays.copyOfRange(bytes, currentPosition, currentPosition + SHA3Hash.HASH_SIZE);
+				currentPosition += SHA3Hash.HASH_SIZE;
+				break;
 
-    public boolean decrypt() {
-        for (RSAEncryptedData rsaData : rsaEncryptedData) {
-            RSAKeyPair rsaKey = KeyStore.getPrivate(rsaData.getKeyHash());
-            if (rsaKey != null) {
-                try {
-                    byte[] aesKey = rsaKey.decrypt(rsaData);
-                    AES aes = new AES(aesKey);
-                    decryptedData = aes.decrypt(aesEncryptedData);
-                    byte[] aesDecryptedData = aes.decrypt(aesEncryptedData);
-                    signature = Arrays.copyOfRange(aesDecryptedData, 0, RSABase.SIGN_LENGTH);
-                    decryptedData = Arrays.copyOfRange(aesDecryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
-                    return true;
-                } catch (RSAException | AESException ex) {
-                    Logger.getLogger(Container.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-        return false;
-    }
+			case RSA_ENCRYPTED_DATA:
+				final byte[] encryptedKeyHash = Arrays.copyOfRange(bytes, currentPosition,
+						currentPosition + SHA3Hash.HASH_SIZE);
+				currentPosition += SHA3Hash.HASH_SIZE;
+				final int encryptedKeyLength = NumberUtils.byteArrayToInt(bytes, currentPosition);
+				currentPosition += NumberUtils.SIZE_OF_INT_IN_BYTES;
+				final byte[] encryptedKeyData = Arrays.copyOfRange(bytes, currentPosition,
+						currentPosition + encryptedKeyLength);
+				currentPosition += encryptedKeyLength;
+				rsaEncryptedData.add(new RSAEncryptedData(encryptedKeyData, encryptedKeyHash));
+				recipientsBuilder.write(encryptedKeyHash);
+				break;
 
-    public boolean verify() {
-        IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
-        if (sender == null) {
-            return false;
-        }
-        try {
-            return sender.verifySignature(signature, decryptedData, recipients);
-        } catch (RSAException ex) {
-            Logger.getLogger(Container.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
-        }
+			case AES_ENCRYPTED_DATA:
+				final byte[] iv = Arrays.copyOfRange(bytes, currentPosition, currentPosition + AES.IV_LENGTH);
+				currentPosition += AES.IV_LENGTH;
+				final int encryptedDataLenght = NumberUtils.byteArrayToInt(bytes, currentPosition);
+				currentPosition += NumberUtils.SIZE_OF_INT_IN_BYTES;
+				final byte[] encryptedData = Arrays.copyOfRange(bytes, currentPosition,
+						currentPosition + encryptedDataLenght);
+				currentPosition += encryptedDataLenght;
+				aesEncryptedData = new AESEncryptedData(iv, encryptedData);
+				break;
 
-    }
+			default:
+				throw new AssertionException();
+			}
+		}
+		this.recipients = recipientsBuilder.toByteArray();
+	}
 
-    public byte[] getDecryptedData() {
-        return decryptedData;
-    }
+	public boolean decrypt() {
+		for (final RSAEncryptedData rsaData : rsaEncryptedData) {
+			final RSAKeyPair rsaKey = KeyStore.getPrivate(rsaData.getKeyHash());
+			if (rsaKey != null) {
+				try {
+					final byte[] aesKey = rsaKey.decrypt(rsaData);
+					final AES aes = new AES(aesKey);
+					decryptedData = aes.decrypt(aesEncryptedData);
+					final byte[] aesDecryptedData = aes.decrypt(aesEncryptedData);
+					signature = Arrays.copyOfRange(aesDecryptedData, 0, RSABase.SIGN_LENGTH);
+					decryptedData = Arrays.copyOfRange(aesDecryptedData, RSABase.SIGN_LENGTH, decryptedData.length);
+					return true;
+				} catch (RSAException | AESException ex) {
+					LOGGER.log(Level.SEVERE, null, ex);
+				}
+			}
+		}
+		return false;
+	}
 
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("Encrypted for:\n");
-        rsaEncryptedData.forEach((rsaData) -> {
-            IEncrypter rsa = KeyStore.getPublic(rsaData.getKeyHash());
-            if (rsa == null) {
-                builder.append(rsaData.getKeyHash().substring(0, 8));
-            } else {
-                builder.append(rsa.toString());
-            }
-            builder.append("\n");
-        });
-        IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
-        builder.append("\nSigned by:\n");
-        if (sender == null) {
-            builder.append(Base64Util.encodeToString(senderKeyHash).substring(0, 8));
-        } else {
-            builder.append(sender.toString());
-        }
-        return builder.toString();
-    }
+	public boolean verify() {
+		final IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
+		if (sender == null) {
+			return false;
+		}
+		try {
+			return sender.verifySignature(signature, decryptedData, recipients);
+		} catch (final RSAException ex) {
+			LOGGER.log(Level.SEVERE, null, ex);
+			return false;
+		}
+
+	}
+
+	public byte[] getDecryptedData() {
+		return decryptedData;
+	}
+
+	@Override
+	public String toString() {
+		final StringBuilder builder = new StringBuilder();
+		builder.append("Encrypted for:\n");
+		rsaEncryptedData.forEach(rsaData -> {
+			final IEncrypter rsa = KeyStore.getPublic(rsaData.getKeyHash());
+			if (rsa == null) {
+				builder.append(rsaData.getKeyHash().substring(0, 8));
+			} else {
+				builder.append(rsa.toString());
+			}
+			builder.append("\n");
+		});
+		final IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
+		builder.append("\nSigned by:\n");
+		if (sender == null) {
+			builder.append(Base64Util.encodeToString(senderKeyHash).substring(0, 8));
+		} else {
+			builder.append(sender.toString());
+		}
+		return builder.toString();
+	}
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +16,16 @@
  */
 package de.cryptui.crypto.asymetric;
 
+import java.io.Serializable;
+
 import de.cryptui.crypto.container.RSAEncryptedData;
 
-public interface IEncrypter {
+public interface IEncrypter extends Serializable {
 
-    public RSAEncryptedData encrypt(byte[] data) throws RSAException;
+	RSAEncryptedData encrypt(byte[] data) throws RSAException;
 
-    public byte[] getHash();
+	byte[] getHash();
 
-    public boolean verifySignature(byte[] sign, byte[] dat, byte[] recipient) throws RSAException;
+	boolean verifySignature(byte[] sign, byte[] dat, byte[] recipient) throws RSAException;
 
 }

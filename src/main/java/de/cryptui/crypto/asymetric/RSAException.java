@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +18,15 @@ package de.cryptui.crypto.asymetric;
 
 public class RSAException extends Exception {
 
-    private Throwable cause;
+	private static final long serialVersionUID = 8679731624604548683L;
+	private final Throwable cause;
 
-    public RSAException(Throwable cause) {
-        this.cause = cause;
-    }
+	public RSAException(final Throwable cause) {
+		this.cause = cause;
+	}
 
-    @Override
-    public Throwable getCause() {
-        return cause;
-    }
+	@Override
+	public Throwable getCause() {
+		return cause;
+	}
 }

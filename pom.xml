@@ -35,5 +35,4 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-    <name>CryptUI Mvn</name>
 </project>

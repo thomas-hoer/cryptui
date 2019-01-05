@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@ import java.awt.Component;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.Icon;
 import javax.swing.JList;
@@ -26,24 +28,26 @@ import javax.swing.filechooser.FileSystemView;
 
 public class FileListRenderer extends DefaultListCellRenderer {
 
-    private static final FileSystemView FILE_SYSTEM_VIEW = FileSystemView.getFileSystemView();
-    private static final Map<String, Icon> ICON_CACHE = new HashMap<>();
+	private static final long serialVersionUID = -3395399290385642832L;
+	private static final FileSystemView FILE_SYSTEM_VIEW = FileSystemView.getFileSystemView();
+	private static final Map<String, Icon> ICON_CACHE = new HashMap<>();
 
-    @Override
-    public Component getListCellRendererComponent(JList list, Object value, int index, boolean selected, boolean expanded) {
-        super.getListCellRendererComponent(list, value, index, selected, expanded);
-        File file = (File) value;
-        String fileName = file.getAbsolutePath();
-        final Icon systemIcon;
-        if (ICON_CACHE.containsKey(fileName)) {
-            systemIcon = ICON_CACHE.get(fileName);
-        } else {
-            systemIcon = FILE_SYSTEM_VIEW.getSystemIcon(file);
-            ICON_CACHE.put(fileName, systemIcon);
-        }
-        setIcon(systemIcon);
-        setText(FILE_SYSTEM_VIEW.getSystemDisplayName(file));
+	@Override
+	public Component getListCellRendererComponent(final JList<?> list, final Object value, final int index,
+			final boolean selected, final boolean expanded) {
+		super.getListCellRendererComponent(list, value, index, selected, expanded);
+		final File file = (File) value;
+		final String fileName = file.getAbsolutePath();
+		final Icon systemIcon;
+		if (ICON_CACHE.containsKey(fileName)) {
+			systemIcon = ICON_CACHE.get(fileName);
+		} else {
+			systemIcon = FILE_SYSTEM_VIEW.getSystemIcon(file);
+			ICON_CACHE.put(fileName, systemIcon);
+		}
+		setIcon(systemIcon);
+		setText(FILE_SYSTEM_VIEW.getSystemDisplayName(file));
 
-        return this;
-    }
+		return this;
+	}
 }

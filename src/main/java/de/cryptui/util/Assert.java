@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +16,14 @@
  */
 package de.cryptui.util;
 
-public class Assert {
+public final class Assert {
 
-    public static void assertTrue(boolean bool) {
-        if (!bool) {
-            throw new AssertionException();
-        }
-    }
+	private Assert() {
+	}
+
+	public static void assertTrue(final boolean bool) {
+		if (!bool) {
+			throw new AssertionException();
+		}
+	}
 }

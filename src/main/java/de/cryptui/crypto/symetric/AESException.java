@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +18,16 @@ package de.cryptui.crypto.symetric;
 
 public class AESException extends Exception {
 
-    private final Throwable cause;
+	private static final long serialVersionUID = -3779811877612869096L;
 
-    public AESException(Throwable cause) {
-        this.cause = cause;
-    }
+	private final Throwable cause;
 
-    @Override
-    public Throwable getCause() {
-        return cause;
-    }
+	public AESException(final Throwable cause) {
+		this.cause = cause;
+	}
+
+	@Override
+	public Throwable getCause() {
+		return cause;
+	}
 }

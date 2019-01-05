@@ -1,5 +1,6 @@
 /*
- * Copyright 2017 thomas-hoer.
+ * Copyright 2019 Thomas Hoermann
+ * https://github.com/thomas-hoer
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,86 +27,87 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
-/**
- *
- * @author Ich
- */
 public class MultipartUtility {
 
-    private static final String LINE_FEED = "\r\n";
+	private static final Logger LOGGER = Logger.getLogger(MultipartUtility.class.getName());
+	private static final String LINE_FEED = "\r\n";
 
-    private final Map<String, String> fields = new HashMap<>();
-    private final Map<String, Pair<String, byte[]>> files = new HashMap<>();
-    private final String requestURL;
+	private final Map<String, String> fields = new HashMap<>();
+	private final Map<String, Pair<String, byte[]>> files = new HashMap<>();
+	private final String requestURL;
 
-    public MultipartUtility(String requestURL) {
-        this.requestURL = requestURL;
-    }
+	public MultipartUtility(final String requestURL) {
+		this.requestURL = requestURL;
+	}
 
-    public void addFormField(String name, String value) {
-        fields.put(name, value);
-    }
+	public void addFormField(final String name, final String value) {
+		fields.put(name, value);
+	}
 
-    public void addFilePart(String fieldName, File uploadFile) throws IOException {
-        byte[] fileData = FileUtils.readFileToByteArray(uploadFile);
-        files.put(fieldName, new ImmutablePair<>(uploadFile.getName(), fileData));
-    }
+	public void addFilePart(final String fieldName, final File uploadFile) throws IOException {
+		final byte[] fileData = FileUtils.readFileToByteArray(uploadFile);
+		files.put(fieldName, new ImmutablePair<>(uploadFile.getName(), fileData));
+	}
 
-    public void addFilePart(String fieldName, String fileName, byte[] fileData) {
-        files.put(fieldName, new ImmutablePair<>(fileName, fileData));
-    }
+	public void addFilePart(final String fieldName, final String fileName, final byte[] fileData) {
+		files.put(fieldName, new ImmutablePair<>(fileName, fileData));
+	}
 
-    public String finish() throws IOException {
+	public String finish() throws IOException {
 
-        final String boundary = "===" + System.currentTimeMillis() + "===";
+		final String boundary = "===" + System.currentTimeMillis() + "===";
 
-        URL url = new URL(requestURL);
-        final HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
-        httpConn.setUseCaches(false);
-        httpConn.setDoOutput(true);
-        httpConn.setDoInput(true);
-        httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        httpConn.setRequestProperty("User-Agent", "CodeJava Agent");
-        httpConn.setRequestProperty("Test", "Bonjour");
-        try (final OutputStream outputStream = httpConn.getOutputStream();
-                final PrintWriter writer = new PrintWriter(outputStream);) {
-            fields.forEach((name, value) -> {
-                writer.append("--" + boundary).append(LINE_FEED);
-                writer.append("Content-Disposition: form-data; name=\"" + name + "\"").append(LINE_FEED);
-                writer.append("Content-Type: text/plain; charset=UTF-8").append(LINE_FEED);
-                writer.append(LINE_FEED);
-                writer.append(value);
-                writer.append(LINE_FEED);
-            });
-            for (Map.Entry<String, Pair<String, byte[]>> file : files.entrySet()) {
-                Pair<String, byte[]> uploadFile = file.getValue();
-                String fileName = uploadFile.getLeft();
-                writer.append("--" + boundary).append(LINE_FEED);
-                writer.append("Content-Disposition: form-data; name=\"" + file.getKey() + "\"; filename=\"" + fileName + "\"").append(LINE_FEED);
-                writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(fileName)).append(LINE_FEED);
-                writer.append("Content-Transfer-Encoding: binary").append(LINE_FEED).append(LINE_FEED);
-                writer.flush();
-                outputStream.write(uploadFile.getRight());
-                outputStream.flush();
-                writer.append(LINE_FEED);
-            }
-            writer.append("--" + boundary + "--").append(LINE_FEED);
-        }
-        int status = httpConn.getResponseCode();
-        if (status == HttpURLConnection.HTTP_OK) {
-            try (InputStream stream = httpConn.getInputStream()) {
-                String result = IOUtils.toString(stream, Charset.defaultCharset());
-                System.out.println(result);
-                httpConn.disconnect();
-                return result;
-            }
-        } else {
-            throw new IOException("Server returned non-OK status: " + status);
-        }
-    }
+		final URL url = new URL(requestURL);
+		final HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+		httpConn.setUseCaches(false);
+		httpConn.setDoOutput(true);
+		httpConn.setDoInput(true);
+		httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+		httpConn.setRequestProperty("User-Agent", "CodeJava Agent");
+		httpConn.setRequestProperty("Test", "Bonjour");
+		try (final OutputStream outputStream = httpConn.getOutputStream();
+				final PrintWriter writer = new PrintWriter(outputStream)) {
+			fields.forEach((name, value) -> {
+				writer.append("--" + boundary).append(LINE_FEED);
+				writer.append("Content-Disposition: form-data; name=\"" + name + "\"").append(LINE_FEED);
+				writer.append("Content-Type: text/plain; charset=UTF-8").append(LINE_FEED);
+				writer.append(LINE_FEED);
+				writer.append(value);
+				writer.append(LINE_FEED);
+			});
+			for (final Map.Entry<String, Pair<String, byte[]>> file : files.entrySet()) {
+				final Pair<String, byte[]> uploadFile = file.getValue();
+				final String fileName = uploadFile.getLeft();
+				writer.append("--" + boundary).append(LINE_FEED);
+				writer.append(
+						"Content-Disposition: form-data; name=\"" + file.getKey() + "\"; filename=\"" + fileName + "\"")
+						.append(LINE_FEED);
+				writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(fileName)).append(LINE_FEED);
+				writer.append("Content-Transfer-Encoding: binary").append(LINE_FEED).append(LINE_FEED);
+				writer.flush();
+				outputStream.write(uploadFile.getRight());
+				outputStream.flush();
+				writer.append(LINE_FEED);
+			}
+			writer.append("--" + boundary + "--").append(LINE_FEED);
+		}
+		final int status = httpConn.getResponseCode();
+		if (status == HttpURLConnection.HTTP_OK) {
+			try (InputStream stream = httpConn.getInputStream()) {
+				final String result = IOUtils.toString(stream, Charset.defaultCharset());
+				LOGGER.info(result);
+				httpConn.disconnect();
+				return result;
+			}
+		} else {
+			throw new IOException("Server returned non-OK status: " + status);
+		}
+	}
 }
