@@ -19,14 +19,9 @@ package de.cryptui.crypto.asymetric;
 public class RSAException extends Exception {
 
 	private static final long serialVersionUID = 8679731624604548683L;
-	private final Throwable cause;
 
 	public RSAException(final Throwable cause) {
-		this.cause = cause;
+		super(cause);
 	}
 
-	@Override
-	public Throwable getCause() {
-		return cause;
-	}
 }

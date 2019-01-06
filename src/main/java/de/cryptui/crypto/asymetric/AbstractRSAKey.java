@@ -24,6 +24,7 @@ import de.cryptui.util.NumberUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -49,6 +50,10 @@ import javax.crypto.NoSuchPaddingException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Base Class for RSA Keys. It provides features for persisting and loading RSA
+ * Key from and to Files as well as naming the keys.
+ */
 public abstract class AbstractRSAKey {
 
 	private static final Logger LOGGER = Logger.getLogger(RSAKeyPair.class.getName());
@@ -70,10 +75,35 @@ public abstract class AbstractRSAKey {
 		}
 	}
 
-	public static AbstractRSAKey fromFile(final File file) {
+	/**
+	 * Loads existing RSA Key from file.
+	 *
+	 * @param file File containing a RSA Key in the CryptUI file format
+	 * @return RSAKeyPair or RSAPublicKey
+	 * @throws RSAException Throws exception when file can not be loaded or the file
+	 *                      is in the wrong format.
+	 */
+	public static AbstractRSAKey fromFile(final File file) throws RSAException {
 		try (final FileInputStream fis = new FileInputStream(file)) {
+			return fromStream(fis);
+		} catch (final IOException e) {
+			throw new RSAException(e);
+		}
+	}
+
+	/**
+	 * Loads existing RSA Key from InputStream.
+	 *
+	 * @param inputStream InputStream containing a RSA Key in the CryptUI file
+	 *                    format
+	 * @return RSAKeyPair or RSAPublicKey
+	 * @throws RSAException Throws exception when key can not be loaded or is in the
+	 *                      wrong format.
+	 */
+	public static AbstractRSAKey fromStream(final InputStream inputStream) throws RSAException {
+		try {
 			final KeyFactory keyFactory = KeyFactory.getInstance("RSA", "BC");
-			final byte[] bytes = IOUtils.toByteArray(fis);
+			final byte[] bytes = IOUtils.toByteArray(inputStream);
 			int currentPosition = 0;
 			String name = null;
 			String comment = null;
@@ -129,11 +159,11 @@ public abstract class AbstractRSAKey {
 			return new RSAPublicKey(publicKey, name, salt);
 		} catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException ex) {
 			Logger.getLogger(AbstractRSAKey.class.getName()).log(Level.SEVERE, null, ex);
+			throw new RSAException(ex);
 		}
-		return null;
 	}
 
-	protected final static byte[] generateSalt() {
+	protected static final byte[] generateSalt() {
 		final byte[] salt = new byte[SALT_LENGTH];
 		new SecureRandom().nextBytes(salt);
 		return salt;

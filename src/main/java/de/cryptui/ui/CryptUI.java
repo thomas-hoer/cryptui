@@ -805,14 +805,17 @@ public class CryptUI extends JFrame {
 	}
 
 	private static AbstractRSAKey loadKey(final File file) {
-		final AbstractRSAKey rsa = AbstractRSAKey.fromFile(file);
-		if (rsa != null) {
+		AbstractRSAKey rsa;
+		try {
+			rsa = AbstractRSAKey.fromFile(file);
 			if (rsa instanceof RSAKeyPair) {
 				KeyStore.addPrivate((RSAKeyPair) rsa);
 			} else if (rsa instanceof IEncrypter) {
 				KeyStore.addPublic((IEncrypter) rsa);
 			}
 			return rsa;
+		} catch (final RSAException e) {
+			LOGGER.log(Level.INFO, file.getName() + " is not a valid RSA Key", e);
 		}
 		return null;
 	}

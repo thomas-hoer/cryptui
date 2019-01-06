@@ -52,11 +52,11 @@ public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 	private static final long serialVersionUID = -5002230889389879796L;
 	private static final Logger LOGGER = Logger.getLogger(RSAKeyPair.class.getName());
 
-	private final String name;
 	private final String comment;
 	private final PrivateKey privateKey;
 	private final PublicKey publicKey;
 	private final byte[] salt;
+	private final String name;
 
 	/**
 	 *
@@ -88,7 +88,7 @@ public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 		this.privateKey = privateKey;
 		this.publicKey = publicKey;
 		this.salt = salt;
-		this.name = name;
+		this.name = generateName(name);
 	}
 
 	private static final KeyPair generateKeyPair() throws RSAException {
@@ -145,7 +145,8 @@ public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 		try {
 			cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 			return new RSAEncryptedData(cipher.doFinal(data), getHash());
-		} catch (IllegalBlockSizeException | InvalidKeyException | BadPaddingException ex) {
+		} catch (IllegalBlockSizeException | InvalidKeyException | BadPaddingException
+				| ArrayIndexOutOfBoundsException ex) {
 			throw new RSAException(ex);
 		}
 	}

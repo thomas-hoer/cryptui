@@ -18,10 +18,10 @@ package de.cryptui.util;
 
 public class AssertionException extends RuntimeException {
 
+	private static final long serialVersionUID = 4421581260348638792L;
+
 	public AssertionException(final String message) {
 		super(message);
 	}
-
-	private static final long serialVersionUID = 4421581260348638792L;
 
 }
