@@ -98,6 +98,12 @@ public class Container {
 		this.recipients = recipientsBuilder.toByteArray();
 	}
 
+	/**
+	 * Decrypts the data and stores the result internally. The data can be fetched
+	 * afterwards using getDecryptedData() if the method returns true.
+	 *
+	 * @return true if the data could be decrypted, false otherwise
+	 */
 	public boolean decrypt() {
 		for (final RSAEncryptedData rsaData : rsaEncryptedData) {
 			final RSAKeyPair rsaKey = KeyStore.getPrivate(rsaData.getKeyHash());
@@ -119,6 +125,11 @@ public class Container {
 		return false;
 	}
 
+	/**
+	 * Verify the senders identity.
+	 *
+	 * @return true if a public key from the sender is found, false otherwise
+	 */
 	public boolean verify() {
 		final IEncrypter sender = KeyStore.getPublic(Base64Util.encodeToString(senderKeyHash));
 		if (sender == null) {

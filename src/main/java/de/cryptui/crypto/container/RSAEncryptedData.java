@@ -16,7 +16,7 @@
  */
 package de.cryptui.crypto.container;
 
-import static de.cryptui.util.Assert.assertTrue;
+import static de.cryptui.util.Assert.assertEqual;
 
 import de.cryptui.DataType;
 import de.cryptui.crypto.asymetric.AbstractRSAKey;
@@ -26,30 +26,48 @@ import de.cryptui.util.NumberUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class RSAEncryptedData {
+import org.bouncycastle.util.Arrays;
+
+public final class RSAEncryptedData {
 
 	private final byte[] encryptedData;
 	private final byte[] keyHash;
 
+	/**
+	 * Creates a wrapper for RSA encrypted data. At the moment only RSA with 4098
+	 * bit (512 byte) is supported.
+	 *
+	 * @param encryptedData RSA encrypted data
+	 * @param keyHash       Hash reference to the public key the data is encrypted
+	 *                      with
+	 */
 	public RSAEncryptedData(final byte[] encryptedData, final byte[] keyHash) {
-		assertTrue(encryptedData.length == AbstractRSAKey.KEY_LENGHT_BYTES);
-		this.encryptedData = encryptedData;
-		this.keyHash = keyHash;
+		assertEqual(AbstractRSAKey.KEY_LENGHT_BYTES, encryptedData.length,
+				"RSA encrypted data requires to have lenght of 512 bytes");
+		this.encryptedData = Arrays.clone(encryptedData);
+		this.keyHash = Arrays.clone(keyHash);
 	}
 
 	public byte[] getEncryptedData() {
-		return encryptedData;
+		return Arrays.clone(encryptedData);
 	}
 
 	public String getKeyHash() {
 		return Base64Util.encodeToString(keyHash);
 	}
 
-	public void writeToOutputStream(final OutputStream fos) throws IOException {
-		fos.write(DataType.RSA_ENCRYPTED_DATA.getNumber());
-		fos.write(keyHash);
-		fos.write(NumberUtils.intToByteArray(encryptedData.length));
-		fos.write(encryptedData);
+	/**
+	 * Write encrypted data and reference hash to OutputStream.
+	 *
+	 * @param outputStream Stream on which the data gets written.
+	 * @throws IOException if an I/O error occurs. In particular,an IOException may
+	 *                     be thrown if the output stream has been closed.
+	 */
+	public void writeToOutputStream(final OutputStream outputStream) throws IOException {
+		outputStream.write(DataType.RSA_ENCRYPTED_DATA.getNumber());
+		outputStream.write(keyHash);
+		outputStream.write(NumberUtils.intToByteArray(encryptedData.length));
+		outputStream.write(encryptedData);
 	}
 
 }

@@ -20,9 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import de.cryptui.crypto.asymetric.RSAException;
 import de.cryptui.crypto.asymetric.RSAKeyPair;
-import de.cryptui.crypto.container.AESEncryptedData;
 import de.cryptui.crypto.container.RSAEncryptedData;
-import de.cryptui.crypto.symetric.AES;
 
 import java.security.GeneralSecurityException;
 import java.security.Security;
@@ -48,14 +46,6 @@ public class CryptUITest {
 		final byte[] data2 = rsa.decrypt(data1);
 		assertEquals(TEST, new String(data2));
 
-	}
-
-	@Test
-	public void testAESEncryption() throws Exception {
-		final AES aes = new AES();
-		final AESEncryptedData encryptedData = aes.encrypt(TEST.getBytes());
-		final byte[] data = aes.decrypt(encryptedData);
-		assertEquals(TEST, new String(data));
 	}
 
 }

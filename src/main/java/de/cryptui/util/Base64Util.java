@@ -34,4 +34,8 @@ public final class Base64Util {
 	public static byte[] decode(final byte[] src) {
 		return Base64.getDecoder().decode(src);
 	}
+
+	public static byte[] decode(final String src) {
+		return Base64.getDecoder().decode(src);
+	}
 }

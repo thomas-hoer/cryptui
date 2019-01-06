@@ -16,7 +16,7 @@
  */
 package de.cryptui.crypto.symetric;
 
-import static de.cryptui.util.Assert.assertTrue;
+import static de.cryptui.util.Assert.assertEqual;
 
 import de.cryptui.crypto.container.AESEncryptedData;
 
@@ -37,44 +37,61 @@ import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.util.Arrays;
 
-public class AES {
+/**
+ * Wrapper Class for AES/GCM/NoPadding. It provides easy access to encryption
+ * and decryption of data. This class is immutable.
+ */
+public final class AES {
 
 	private static final Logger LOGGER = Logger.getLogger(AES.class.getName());
 	public static final int IV_LENGTH = 12;
 	public static final int KEY_SIZE_BITS = 128;
 	public static final int KEY_SIZE_BYTES = 16;
 
-	private Cipher cipher;
+	private final Cipher cipher;
 	private final byte[] keyBytes;
 	private final Key key;
-	private final SecureRandom sr = new SecureRandom();
+	private final SecureRandom secureRandom = new SecureRandom();
 
-	public AES() {
+	/**
+	 * Creates a new AES Cipher with a new random generated Key.
+	 *
+	 * @throws AESException if cipher can not be loaded
+	 */
+	public AES() throws AESException {
 		keyBytes = new byte[KEY_SIZE_BYTES];
-		sr.nextBytes(keyBytes);
+		secureRandom.nextBytes(keyBytes);
 		key = new SecretKeySpec(keyBytes, "AES");
 		try {
 			cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
+			throw new AESException(ex);
 		}
 	}
 
-	public AES(final byte[] keyBytes) {
-		assertTrue(keyBytes.length == KEY_SIZE_BYTES);
-		this.keyBytes = keyBytes;
-		key = new SecretKeySpec(keyBytes, "AES");
+	/**
+	 * Creates a new AES Cipher with predefined Key.
+	 *
+	 * @param keyBytes byte array of size 16, the values should have high entropy
+	 * @throws AESException if cipher can not be loaded
+	 */
+	public AES(final byte[] keyBytes) throws AESException {
+		assertEqual(KEY_SIZE_BYTES, keyBytes.length, "AES Key requires to have lenght of 16 bytes");
+		this.keyBytes = Arrays.clone(keyBytes);
+		key = new SecretKeySpec(this.keyBytes, "AES");
 		try {
 			cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
+			throw new AESException(ex);
 		}
 	}
 
 	public AESEncryptedData encrypt(final byte[] src) throws AESException {
 		try {
 			final byte[] iv = new byte[IV_LENGTH];
-			sr.nextBytes(iv);
+			secureRandom.nextBytes(iv);
 			final GCMParameterSpec params = new GCMParameterSpec(KEY_SIZE_BITS, iv, 0, IV_LENGTH);
 			cipher.init(Cipher.ENCRYPT_MODE, key, params);
 			final byte[] cipherText = cipher.doFinal(src);
@@ -96,6 +113,11 @@ public class AES {
 		}
 	}
 
+	/**
+	 * Get key of current cipher.
+	 *
+	 * @return a copy of the current key. The key should be kept secret.
+	 */
 	public byte[] getKey() {
 		return Arrays.clone(this.keyBytes);
 	}

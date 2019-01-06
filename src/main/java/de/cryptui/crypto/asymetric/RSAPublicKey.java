@@ -26,6 +26,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.PublicKey;
 
+/**
+ * Represents a RSA public Key. This is usually a key from a different person.
+ * It is used to encrypt messages and verify integrity of a received message.
+ */
 public class RSAPublicKey extends AbstractRSAKey implements IEncrypter {
 
 	private static final long serialVersionUID = -8946272597440918123L;
@@ -34,7 +38,14 @@ public class RSAPublicKey extends AbstractRSAKey implements IEncrypter {
 	private final byte[] salt;
 	private final String name;
 
-	public RSAPublicKey(final PublicKey publicKey, final String name, final byte[] salt) {
+	/**
+	 * Load an existing public RSA Key. For creating use AbstractRSAKey.fromFile().
+	 *
+	 * @param publicKey
+	 * @param name
+	 * @param salt
+	 */
+	RSAPublicKey(final PublicKey publicKey, final String name, final byte[] salt) {
 		this.publicKey = publicKey;
 		this.salt = salt;
 		this.name = generateName(name);

@@ -16,7 +16,7 @@
  */
 package de.cryptui.crypto.container;
 
-import static de.cryptui.util.Assert.assertTrue;
+import static de.cryptui.util.Assert.assertEqual;
 
 import de.cryptui.DataType;
 import de.cryptui.crypto.symetric.AES;
@@ -25,13 +25,13 @@ import de.cryptui.util.NumberUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class AESEncryptedData {
+public final class AESEncryptedData {
 
 	private final byte[] iv;
 	private final byte[] data;
 
 	public AESEncryptedData(final byte[] iv, final byte[] data) {
-		assertTrue(iv.length == AES.IV_LENGTH);
+		assertEqual(AES.IV_LENGTH, iv.length, "AES Key requires to have lenght of 16 bytes");
 		this.iv = iv;
 		this.data = data;
 	}

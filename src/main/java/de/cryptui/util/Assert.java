@@ -21,9 +21,30 @@ public final class Assert {
 	private Assert() {
 	}
 
-	public static void assertTrue(final boolean bool) {
+	/**
+	 * Checks a boolean value to be true.
+	 *
+	 * @param bool    The value checked to be true.
+	 * @param message If the value is false an exception with the message message is
+	 *                thrown.
+	 */
+	public static void assertTrue(final boolean bool, final String message) {
 		if (!bool) {
-			throw new AssertionException();
+			throw new AssertionException(message);
+		}
+	}
+
+	/**
+	 * Tests two values ​​for equality.
+	 *
+	 * @param expected Expected value for comparison.
+	 * @param actual   Value that is checked to be equal to expected.
+	 * @param message  If the values are different an exception with the message
+	 *                 message is thrown.
+	 */
+	public static void assertEqual(final int expected, final int actual, final String message) {
+		if (expected != actual) {
+			throw new AssertionException(message);
 		}
 	}
 }

@@ -768,8 +768,8 @@ public class CryptUI extends JFrame {
 		}
 		try {
 			final Container container = new Container(openFile);
-			assertTrue(container.decrypt());
-			assertTrue(container.verify());
+			assertTrue(container.decrypt(), "Not able to find adequat keys decryption.");
+			assertTrue(container.verify(), "Not able to verify the sender.");
 			try (FileOutputStream fos = new FileOutputStream(saveFile)) {
 				fos.write(container.getDecryptedData());
 			}

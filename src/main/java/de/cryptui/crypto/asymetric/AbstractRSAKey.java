@@ -24,12 +24,9 @@ import de.cryptui.util.NumberUtils;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
@@ -39,7 +36,6 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAKeyGenParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -56,7 +52,7 @@ import org.apache.commons.lang3.StringUtils;
 public abstract class AbstractRSAKey {
 
 	private static final Logger LOGGER = Logger.getLogger(RSAKeyPair.class.getName());
-	public static final String CIPHER_ALGORITHM = "RSA/None/OAEPWithSHA3-512AndMGF1Padding";
+	private static final String CIPHER_ALGORITHM = "RSA/None/OAEPWithSHA3-512AndMGF1Padding";
 	public static final String SIGNATURE_ALGORITHM = "SHA512withRSAandMGF1";
 
 	public static final int KEY_LENGHT_BITS = 4096;
@@ -129,13 +125,18 @@ public abstract class AbstractRSAKey {
 			}
 			if (privateKey != null) {
 				return new RSAKeyPair(name, comment, privateKey, publicKey, salt);
-			} else {
-				return new RSAPublicKey(publicKey, name, salt);
 			}
+			return new RSAPublicKey(publicKey, name, salt);
 		} catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException ex) {
 			Logger.getLogger(AbstractRSAKey.class.getName()).log(Level.SEVERE, null, ex);
 		}
 		return null;
+	}
+
+	protected final static byte[] generateSalt() {
+		final byte[] salt = new byte[SALT_LENGTH];
+		new SecureRandom().nextBytes(salt);
+		return salt;
 	}
 
 	protected RSAEncryptedData encrypt(final Key key, final byte[] data) throws RSAException {
@@ -169,22 +170,6 @@ public abstract class AbstractRSAKey {
 			LOGGER.log(Level.SEVERE, null, ex);
 			throw new RSAException(ex);
 		}
-	}
-
-	protected final KeyPair generateKeyPair() throws RSAException {
-		try {
-			final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-			keyPairGenerator.initialize(new RSAKeyGenParameterSpec(KEY_LENGHT_BITS, RSAKeyGenParameterSpec.F4));
-			return keyPairGenerator.generateKeyPair();
-		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException ex) {
-			throw new RSAException(ex);
-		}
-	}
-
-	protected final byte[] generateSalt() {
-		final byte[] salt = new byte[SALT_LENGTH];
-		new SecureRandom().nextBytes(salt);
-		return salt;
 	}
 
 	protected final String generateName(final String suggestedName) {

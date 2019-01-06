@@ -24,13 +24,16 @@ import de.cryptui.util.NumberUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.spec.RSAKeyGenParameterSpec;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,6 +43,10 @@ import javax.crypto.IllegalBlockSizeException;
 
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Represents a RSA Key Pair containing the private key and its corresponding
+ * public key.
+ */
 public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 
 	private static final long serialVersionUID = -5002230889389879796L;
@@ -51,6 +58,12 @@ public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 	private final PublicKey publicKey;
 	private final byte[] salt;
 
+	/**
+	 *
+	 * @param name
+	 * @param comment
+	 * @throws RSAException
+	 */
 	public RSAKeyPair(final String name, final String comment) throws RSAException {
 		this.comment = comment;
 		final KeyPair keyPair = generateKeyPair();
@@ -60,13 +73,32 @@ public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 		this.name = generateName(name);
 	}
 
-	public RSAKeyPair(final String name, final String comment, final PrivateKey privateKey, final PublicKey publicKey,
+	/**
+	 * This constructor is needed to load an existing RSAKeyPair.
+	 *
+	 * @param name
+	 * @param comment
+	 * @param privateKey
+	 * @param publicKey
+	 * @param salt       Salt is only needed for the Hash (Name) of the public Key
+	 */
+	RSAKeyPair(final String name, final String comment, final PrivateKey privateKey, final PublicKey publicKey,
 			final byte[] salt) {
 		this.comment = comment;
 		this.privateKey = privateKey;
 		this.publicKey = publicKey;
 		this.salt = salt;
 		this.name = name;
+	}
+
+	private static final KeyPair generateKeyPair() throws RSAException {
+		try {
+			final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+			keyPairGenerator.initialize(new RSAKeyGenParameterSpec(KEY_LENGHT_BITS, RSAKeyGenParameterSpec.F4));
+			return keyPairGenerator.generateKeyPair();
+		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException ex) {
+			throw new RSAException(ex);
+		}
 	}
 
 	public RSAPublicKey getPublicKey() {
