@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.PrintStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -70,10 +70,9 @@ public class MultipartUtility {
 		httpConn.setDoOutput(true);
 		httpConn.setDoInput(true);
 		httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-		httpConn.setRequestProperty("User-Agent", "CodeJava Agent");
-		httpConn.setRequestProperty("Test", "Bonjour");
+		httpConn.setRequestProperty("User-Agent", "CryptUI Client");
 		try (final OutputStream outputStream = httpConn.getOutputStream();
-				final PrintWriter writer = new PrintWriter(outputStream)) {
+				final PrintStream writer = new PrintStream(outputStream, false, "UTF-8")) {
 			fields.forEach((name, value) -> {
 				writer.append("--" + boundary).append(LINE_FEED);
 				writer.append("Content-Disposition: form-data; name=\"" + name + "\"").append(LINE_FEED);
@@ -97,6 +96,7 @@ public class MultipartUtility {
 				writer.append(LINE_FEED);
 			}
 			writer.append("--" + boundary + "--").append(LINE_FEED);
+			writer.flush();
 		}
 		final int status = httpConn.getResponseCode();
 		if (status == HttpURLConnection.HTTP_OK) {

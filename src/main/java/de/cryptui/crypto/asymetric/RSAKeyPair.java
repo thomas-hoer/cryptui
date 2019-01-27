@@ -24,6 +24,8 @@ import de.cryptui.util.NumberUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -108,36 +110,33 @@ public class RSAKeyPair extends AbstractRSAKey implements IEncrypter {
 	@Override
 	public void saveKeyInFile(final File file) throws IOException {
 		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(DataType.OBJECT_NAME.getNumber());
-			final byte[] nameBytes = name.getBytes("UTF-8");
-			if (nameBytes.length < 128) {
-				fos.write(nameBytes.length);
-				fos.write(nameBytes);
-			} else {
-				fos.write(127);
-				fos.write(nameBytes, 0, 127);
-			}
-
-			fos.write(DataType.DESCRIPTION_SHORT.getNumber());
-			final byte[] commentBytes = comment.getBytes("UTF-8");
-			if (commentBytes.length < 128) {
-				fos.write(commentBytes.length);
-				fos.write(commentBytes);
-			} else {
-				fos.write(127);
-				fos.write(commentBytes, 0, 127);
-			}
-
-			final byte[] privateKeyEncoded = privateKey.getEncoded();
-			fos.write(DataType.PRIVATE_KEY.getNumber());
-			fos.write(NumberUtils.intToByteArray(privateKeyEncoded.length));
-			fos.write(privateKeyEncoded);
-			final byte[] publicKeyEncoded = publicKey.getEncoded();
-			fos.write(DataType.PUBLIC_KEY.getNumber());
-			fos.write(NumberUtils.intToByteArray(publicKeyEncoded.length));
-			fos.write(publicKeyEncoded);
-			fos.write(salt);
+			saveKeyInStream(fos);
 		}
+	}
+
+	@Override
+	public void saveKeyInStream(final OutputStream fos) throws IOException {
+		writeObjectName(fos, name);
+
+		fos.write(DataType.DESCRIPTION_SHORT.getNumber());
+		final byte[] commentBytes = comment.getBytes(StandardCharsets.UTF_8);
+		if (commentBytes.length < 128) {
+			fos.write(commentBytes.length);
+			fos.write(commentBytes);
+		} else {
+			fos.write(127);
+			fos.write(commentBytes, 0, 127);
+		}
+
+		final byte[] privateKeyEncoded = privateKey.getEncoded();
+		fos.write(DataType.PRIVATE_KEY.getNumber());
+		fos.write(NumberUtils.intToByteArray(privateKeyEncoded.length));
+		fos.write(privateKeyEncoded);
+		final byte[] publicKeyEncoded = publicKey.getEncoded();
+		fos.write(DataType.PUBLIC_KEY.getNumber());
+		fos.write(NumberUtils.intToByteArray(publicKeyEncoded.length));
+		fos.write(publicKeyEncoded);
+		fos.write(salt);
 	}
 
 	@Override

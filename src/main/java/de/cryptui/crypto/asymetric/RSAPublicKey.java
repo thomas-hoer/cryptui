@@ -24,6 +24,7 @@ import de.cryptui.util.NumberUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.security.PublicKey;
 
 /**
@@ -54,22 +55,19 @@ public class RSAPublicKey extends AbstractRSAKey implements IEncrypter {
 	@Override
 	public void saveKeyInFile(final File file) throws IOException {
 		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(DataType.OBJECT_NAME.getNumber());
-			final byte[] nameBytes = name.getBytes("UTF-8");
-			if (nameBytes.length < 128) {
-				fos.write(nameBytes.length);
-				fos.write(nameBytes);
-			} else {
-				fos.write(127);
-				fos.write(nameBytes, 0, 127);
-			}
-
-			final byte[] publicKeyEncoded = publicKey.getEncoded();
-			fos.write(DataType.PUBLIC_KEY.getNumber());
-			fos.write(NumberUtils.intToByteArray(publicKeyEncoded.length));
-			fos.write(publicKeyEncoded);
-			fos.write(salt);
+			saveKeyInStream(fos);
 		}
+	}
+
+	@Override
+	public void saveKeyInStream(final OutputStream outputStream) throws IOException {
+		writeObjectName(outputStream, name);
+
+		final byte[] publicKeyEncoded = publicKey.getEncoded();
+		outputStream.write(DataType.PUBLIC_KEY.getNumber());
+		outputStream.write(NumberUtils.intToByteArray(publicKeyEncoded.length));
+		outputStream.write(publicKeyEncoded);
+		outputStream.write(salt);
 	}
 
 	@Override

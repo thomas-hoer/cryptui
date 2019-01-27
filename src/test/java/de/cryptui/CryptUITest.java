@@ -17,13 +17,15 @@
 package de.cryptui;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import de.cryptui.crypto.asymetric.RSAException;
-import de.cryptui.crypto.asymetric.RSAKeyPair;
-import de.cryptui.crypto.container.RSAEncryptedData;
+import de.cryptui.ui.CryptUI;
 
-import java.security.GeneralSecurityException;
+import java.awt.Component;
 import java.security.Security;
+
+import javax.swing.JRootPane;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.BeforeClass;
@@ -31,7 +33,7 @@ import org.junit.Test;
 
 public class CryptUITest {
 
-	public static final String TEST = "Teststring";
+	private static CryptUI cryptUI = new CryptUI();
 
 	@BeforeClass
 	public static void setUpClass() {
@@ -39,13 +41,10 @@ public class CryptUITest {
 	}
 
 	@Test
-	public void testRSAEncryption() throws GeneralSecurityException, RSAException {
-		final RSAKeyPair rsa = new RSAKeyPair("Test", "Test");
-
-		final RSAEncryptedData data1 = rsa.encrypt(TEST.getBytes());
-		final byte[] data2 = rsa.decrypt(data1);
-		assertEquals(TEST, new String(data2));
-
+	public void testCryptUI() {
+		final Component[] components = cryptUI.getComponents();
+		assertNotNull(components);
+		assertEquals(1, components.length);
+		assertTrue(components[0] instanceof JRootPane);
 	}
-
 }

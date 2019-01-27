@@ -25,8 +25,6 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -43,7 +41,6 @@ import org.bouncycastle.util.Arrays;
  */
 public final class AES {
 
-	private static final Logger LOGGER = Logger.getLogger(AES.class.getName());
 	public static final int IV_LENGTH = 12;
 	public static final int KEY_SIZE_BITS = 128;
 	public static final int KEY_SIZE_BYTES = 16;
@@ -65,7 +62,6 @@ public final class AES {
 		try {
 			cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
 			throw new AESException(ex);
 		}
 	}
@@ -83,7 +79,6 @@ public final class AES {
 		try {
 			cipher = Cipher.getInstance("AES/GCM/NoPadding");
 		} catch (NoSuchAlgorithmException | NoSuchPaddingException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
 			throw new AESException(ex);
 		}
 	}

@@ -116,7 +116,9 @@ public class RSAKeyPairTest {
 
 		final RSAEncryptedData publicKeyCipherText = publicKey.encrypt(TEST_DATA);
 
-		assertArrayEquals(keyPairCipherText.getEncryptedData(), publicKeyCipherText.getEncryptedData());
 		assertEquals(keyPairCipherText.getKeyHash(), publicKeyCipherText.getKeyHash());
+		final byte[] keyPairDecrypted = rsaKeyPair.decrypt(keyPairCipherText);
+		final byte[] publKeyDecrypted = rsaKeyPair.decrypt(publicKeyCipherText);
+		assertArrayEquals(keyPairDecrypted, publKeyDecrypted);
 	}
 }

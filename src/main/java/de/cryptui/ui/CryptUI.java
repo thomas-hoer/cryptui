@@ -664,14 +664,13 @@ public class CryptUI extends JFrame {
 		try {
 			final RSAKeyPair rsa = privateKeyList.getSelectedValue();
 			final RSAPublicKey publicKey = rsa.getPublicKey();
-			final File file = File.createTempFile("temp_", ".pubkey");
-			publicKey.saveKeyInFile(file);
+			final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			publicKey.saveKeyInStream(outputStream);
 			final String httpsURL = UserConfiguration.getServer() + "/upload.php";
 			final MultipartUtility multipart = new MultipartUtility(httpsURL);
 			multipart.addFormField("submit", "true");
-			multipart.addFilePart("fileToUpload", file);
+			multipart.addFilePart("fileToUpload", publicKey.toString(), outputStream.toByteArray());
 			multipart.finish();
-			file.delete();
 		} catch (final IOException ex) {
 			LOGGER.log(Level.SEVERE, null, ex);
 		}
@@ -781,7 +780,7 @@ public class CryptUI extends JFrame {
 		}
 	}
 
-	public void showInfo(final File file) {
+	private void showInfo(final File file) {
 		final StringBuilder text = new StringBuilder();
 		if (file.isDirectory()) {
 			text.append(getCanonicalFile(file).getName());

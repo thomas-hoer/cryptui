@@ -19,10 +19,17 @@ package de.cryptui;
 import de.cryptui.ui.CryptUI;
 
 import java.security.Security;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class CryptUiMain {
+
+	private static final Logger LOGGER = Logger.getLogger(CryptUiMain.class.getName());
 
 	/**
 	 * Main to start the Program.
@@ -31,6 +38,12 @@ public class CryptUiMain {
 	 */
 	public static void main(final String[] args) {
 		Security.addProvider(new BouncyCastleProvider());
+		try {
+			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+				| UnsupportedLookAndFeelException e) {
+			LOGGER.log(Level.WARNING, "Error occured while setting Look and Feel to SystemLookAndFeelClassName", e);
+		}
 		java.awt.EventQueue.invokeLater(() -> new CryptUI().setVisible(true));
 
 	}

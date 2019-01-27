@@ -25,6 +25,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
@@ -118,14 +120,14 @@ public abstract class AbstractRSAKey {
 				case OBJECT_NAME:
 					final int nameLenght = bytes[currentPosition++];
 					name = new String(Arrays.copyOfRange(bytes, currentPosition, currentPosition + nameLenght),
-							"UTF-8");
+							StandardCharsets.UTF_8);
 					currentPosition += nameLenght;
 					break;
 
 				case DESCRIPTION_SHORT:
 					final int commentLenght = bytes[currentPosition++];
 					comment = new String(Arrays.copyOfRange(bytes, currentPosition, currentPosition + commentLenght),
-							"UTF-8");
+							StandardCharsets.UTF_8);
 					currentPosition += commentLenght;
 					break;
 
@@ -158,7 +160,6 @@ public abstract class AbstractRSAKey {
 			}
 			return new RSAPublicKey(publicKey, name, salt);
 		} catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException ex) {
-			Logger.getLogger(AbstractRSAKey.class.getName()).log(Level.SEVERE, null, ex);
 			throw new RSAException(ex);
 		}
 	}
@@ -167,6 +168,18 @@ public abstract class AbstractRSAKey {
 		final byte[] salt = new byte[SALT_LENGTH];
 		new SecureRandom().nextBytes(salt);
 		return salt;
+	}
+
+	protected static void writeObjectName(final OutputStream fos, final String name) throws IOException {
+		fos.write(DataType.OBJECT_NAME.getNumber());
+		final byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
+		if (nameBytes.length < 128) {
+			fos.write(nameBytes.length);
+			fos.write(nameBytes);
+		} else {
+			fos.write(127);
+			fos.write(nameBytes, 0, 127);
+		}
 	}
 
 	protected RSAEncryptedData encrypt(final Key key, final byte[] data) throws RSAException {
@@ -178,7 +191,7 @@ public abstract class AbstractRSAKey {
 		}
 	}
 
-	protected byte[] decrpyt(final Key key, final RSAEncryptedData data) throws RSAException {
+	protected static byte[] decrpyt(final Key key, final RSAEncryptedData data) throws RSAException {
 		try {
 			cipher.init(Cipher.DECRYPT_MODE, key);
 			return cipher.doFinal(data.getEncryptedData());
@@ -188,7 +201,7 @@ public abstract class AbstractRSAKey {
 
 	}
 
-	protected boolean verifySignature(final PublicKey publicKey, final byte[] sign, final byte[] dat,
+	protected static boolean verifySignature(final PublicKey publicKey, final byte[] sign, final byte[] dat,
 			final byte[] recipient) throws RSAException {
 		try {
 			final Signature signature = Signature.getInstance(SIGNATURE_ALGORITHM);
@@ -197,7 +210,6 @@ public abstract class AbstractRSAKey {
 			signature.update(recipient);
 			return signature.verify(sign);
 		} catch (SignatureException | InvalidKeyException | NoSuchAlgorithmException ex) {
-			LOGGER.log(Level.SEVERE, null, ex);
 			throw new RSAException(ex);
 		}
 	}
@@ -205,13 +217,14 @@ public abstract class AbstractRSAKey {
 	protected final String generateName(final String suggestedName) {
 		if (StringUtils.isEmpty(suggestedName)) {
 			return Base64Util.encodeToString(getHash()).substring(0, 16);
-		} else {
-			return suggestedName;
 		}
+		return suggestedName;
 	}
 
 	public abstract byte[] getHash();
 
 	public abstract void saveKeyInFile(File file) throws IOException;
+
+	public abstract void saveKeyInStream(OutputStream outputStream) throws IOException;
 
 }
