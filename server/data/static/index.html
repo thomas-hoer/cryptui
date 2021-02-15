@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset='utf-8'>
+  <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+  <title>CryptUI.de</title>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <link rel='stylesheet' type='text/css' href='/main.css'>
+ </head>
+ <body>
+  <div id="content"></div>
+
+
+  <script src="/js/wasm_exec.min.js"></script>
+  <script type="module">
+  'use strict';
+  import { Page } from './page.js';
+  import { Router } from '/component/router.js';
+  import { h, render } from '/js/preact.js';
+  // Use 'Router' for Single-Page-Application or 'Page' for development
+  const go = new Go()
+  WebAssembly.instantiateStreaming(
+   fetch('/wasm/main.wasm'),
+    go.importObject
+   ).then(result => {
+    go.run(result.instance)
+    render(h(Router), document.querySelector('#content'));
+  })
+  </script>
+ </body>
+</html>
