@@ -12,15 +12,6 @@ body::-webkit-scrollbar {
 	display: none;
 }
 
-textarea {
-	font-family: Arial;
-}
-
-a {
-	text-decoration: none;
-	color: black;
-}
-
 #content {
 	display: flex;
 	flex-flow: column;
@@ -52,11 +43,6 @@ a {
 	padding: 8px;
 }
 
-.header-back {
-	padding: 8px;
-	cursor: pointer;
-}
-
 .header .menu-icon {
 	display: none;
 	padding: 8px;
@@ -72,35 +58,9 @@ a {
 	width: 100%;
 }
 
-.content {
-	
-}
-
 .content-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
-
-.menu {
-	background-color: #F5F5F6;
-	display: flex;
-	flex-flow: column;
-	flex-direction: column;
-}
-
-.menu .menu-text {
-}
-
-.content-button {
-	display: block;
-	cursor: pointer;
-	margin: 16px;
-	padding: 8px;
-	background-color: #d9993a;
-	border-radius: 8px;
-	box-shadow: 1px 2px 2px #AAAAAA;
-	text-align: center;
-	color: #FFF;
 }
 
 .content-board {
@@ -119,94 +79,18 @@ a {
 	align-items: center;
 }
 
-.board-title a {
-	color:white;
-}
-
-.board-title input[type="text"] {
-	border: 0px;
-	border-bottom: 0.5px solid grey;
-	font-size: 20px;
-	padding: 0px;
-	background-color: #FFF2;
-	color: #FFF;
-}
-
 .board-title div {
 	display: flex;
 }
 
-.board-title div img {
-	margin: -4px 0px -4px 4px;
-}
-
-.board-body {
-	
-}
-
-.board-element input[type="text"], .board-element input[type="number"],
-	.board-element input[type="date"], .board-element textarea, .input-readonly,
-	.board-element select {
-	border: 0px;
-	width: 100%;
-	border-bottom: 0.5px solid grey;
-	font-family: sans-serif;
-	height: 20.5px;
-	margin-bottom: 4px;
-}
-
-.board-body textarea {
-	height: 5em;
-}
-
-.board-paragraph {
-	font-size: 80%;
-}
-
-.board-paragraph ul {
-	margin-block-start: 0.25em;
-}
-
-.board-list-element {
-	display: block;
-	padding: 8px;
-	border-bottom: 0.5px solid #888888;
+.board-title a {
+	color:white;
+	text-decoration: none;
 }
 
 .board-element {
 	display: block;
 	padding: 8px;
-}
-.board-list-element:last-child {
-	border-bottom: 0px;
-}
-
-.board-list-element h1 {
-	font-size: 100%;
-	margin: 0;
-}
-
-.board-list-element a {
-	display: block;
-}
-
-.board-button ,.board-element input[type="button"]{
-	display: block;
-	cursor: pointer;
-	padding: 4px;
-	background-color: #62727b;
-	border-color: #62727b;
-	font-weight:bold;
-	color:white;
-	border-radius: 4px;
-	text-align: center;
-}
-
-.user-box {
-	height: 48px;
-	align-items: center;
-	display: flex !important;
-	border: 0.5px solid grey;
 }
 
 .file{
