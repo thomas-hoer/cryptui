@@ -23,6 +23,7 @@ func main() {
 		business: "data/business",
 		user:     "data/user",
 	}
+	sh.init()
 	http.Handle("/", handleMiddleware(Gzip(sh)))
 	log.Fatal(http.ListenAndServe(port, nil))
 }
@@ -71,13 +72,8 @@ type BusinessInfo struct {
 	Instanceable   bool     `json:"instanceable"`
 	Allow          []string `json:"allow"` // Allow other Business Types as Child
 	CurrentVersion string   `json:"currentVersion"`
-
-	//Version Specific
-	//GetScript      string   `json:"getScript"`
-	//PostScript     string   `json:"postScript"`
-	// Component
-	// Page
 }
+
 type StorageHandler struct {
 	static   string
 	business string
@@ -122,6 +118,13 @@ func (handler *StorageHandler) handleGetUser(resp http.ResponseWriter, requestUR
 		resp.Write(dat)
 	}
 }
+
+func (handler *StorageHandler) init() {
+	os.MkdirAll(handler.static, os.ModePerm)
+	os.MkdirAll(handler.business, os.ModePerm)
+	os.MkdirAll(handler.user, os.ModePerm)
+}
+
 func (handler *StorageHandler) handleGetIndex(resp http.ResponseWriter, base, requestURI, queryParam string) {
 	fileInfos, _ := ioutil.ReadDir(base + requestURI)
 	names := make([]string, 0)
