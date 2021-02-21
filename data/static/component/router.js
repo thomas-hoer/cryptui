@@ -3,7 +3,7 @@ import { h } from '/js/preact.js'
 import { useState ,useEffect} from '/js/hooks.js'
 
 
-function Router(props){
+function Router(){
 	const [page,setPage] = useState(null)
 	const [pathname,setPathname] = useState(window.location.pathname)
 
@@ -42,7 +42,7 @@ function Router(props){
 	},[true])
 	useEffect(()=>{
 		const oldpopstate = window.onpopstate
-		window.onpopstate = event =>{
+		window.onpopstate = () =>{
 			setPathname(window.location.pathname)
 		}
 		return ()=>{window.onpopstate=oldpopstate}
