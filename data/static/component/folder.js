@@ -1,5 +1,6 @@
 'use strict'
 import {h,Fragment} from '/js/preact.js'
+import {useState} from '/js/hooks.js'
 import {Board} from '/component/board.js'
 import {Grid} from '/component/grid.js'
 
@@ -24,6 +25,7 @@ function toBlob(file){
 }
 
 function Folder(props){
+	const [folder,setFolder] = useState('')
 	async function submit(ev){
 		ev.preventDefault()
 		const file = ev.target[0].files[0]
@@ -42,19 +44,34 @@ function Folder(props){
 		})
 		return false
 	}
-	return(h(Fragment,null,
+	function addFolder(ev){
+		ev.preventDefault()
+		fetch(folder+"/type",{
+			method:"PUT",
+			body:"folder/instance"
+		})
+	}
+	return h(Fragment,null,
 			h(Grid,null,
-					h(Board,{title:"Upload"},
-							h('form',{onsubmit:submit},
-								h('input',{type:'file',multiple:'multiple'}),
-								h('input',{type:'submit'})
-							)
-						)
-					),
-			h(Grid,null,
-					props.files.map(f=>h('div',{onClick:()=>download(f),className:'file'},f.name))
+				h(Board,{title:"Upload"},
+					h('form',{onsubmit:submit},
+						h('input',{type:'file',multiple:'multiple'}),
+						h('input',{type:'submit'})
 					)
-			)
+				),
+				h(Board,{title:"New Folder"},
+					h('form',{onsubmit:addFolder},
+						h('input',{type:'text',value:folder,onChange:ev=>setFolder(ev.target.value)}),
+						h('input',{type:'submit'})
+					)
+				)
+			),
+			h(Grid,null,
+				props.folder.filter(f=>f.includes("/")).map(f=>h('a',{href:f,className:'folder'},f.replace("/","")))
+			),
+			h(Grid,null,
+				props.files.map(f=>h('div',{onClick:()=>download(f),className:'file'},f.name))
+			),
 		)
 }
 

@@ -93,7 +93,13 @@ body::-webkit-scrollbar {
 	padding: 8px;
 }
 
-.file{
+.folder{
+	display: block; 
+	text-decoration: none;
+	color: black;
+}
+
+.file, .folder{
 	cursor: pointer;
 	margin: 8px;
 	padding: 8px;

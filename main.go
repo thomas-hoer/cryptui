@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -13,7 +14,6 @@ import (
 )
 
 const logRequests bool = true
-const port string = ":8080"
 const contentType = "Content-Type"
 
 func main() {
@@ -24,7 +24,13 @@ func main() {
 	}
 	sh.init()
 	http.Handle("/", handleMiddleware(Gzip(sh)))
-	log.Fatal(http.ListenAndServe(port, nil))
+	if len(os.Args) == 3 {
+		certFile := os.Args[1]
+		keyFile := os.Args[2]
+		log.Fatal(http.ListenAndServeTLS(":443", certFile, keyFile, nil))
+	} else {
+		log.Fatal(http.ListenAndServe(":80", nil))
+	}
 }
 
 func handleMiddleware(next http.Handler) http.Handler {
@@ -201,6 +207,7 @@ func (handler *storageHandler) handlePostUser(resp http.ResponseWriter, req *htt
 
 func (handler *storageHandler) handlePutUser(resp http.ResponseWriter, req *http.Request) {
 	filename := handler.user + req.RequestURI
+	os.MkdirAll(path.Dir(filename), os.ModePerm)
 	newData, _ := io.ReadAll(req.Body)
 	newDataString := string(newData)
 	os.WriteFile(filename, []byte(newDataString), os.ModePerm)

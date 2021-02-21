@@ -18,6 +18,7 @@ func main() {
 	js.Global().Set("encryptString", js.FuncOf(encryptString))
 	js.Global().Set("encrypt", js.FuncOf(encrypt))
 	js.Global().Set("createKey", js.FuncOf(createKey))
+	go getRsaKey()
 	<-c
 }
 
