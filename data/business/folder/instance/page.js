@@ -6,13 +6,11 @@ import {Folder} from '/component/folder.js'
 
 function Page(){
 	const [files,setFiles] = useState([])
-	const [folder,setFolder] = useState([])
 	useEffect(()=>{
 		fetch("files").then(res=>res.json()).then(res=>{
 			const json = decryptToString(res)
 			setFiles(JSON.parse(json))
 		})
-		fetch("?json").then(res=>res.json()).then(setFolder)
 	},[true])
 	const splits = window.location.pathname.split("/")
 	const layoutOptions = {
@@ -28,7 +26,7 @@ function Page(){
 		setFiles(newFiles)
 	}
 	return h(Layout,layoutOptions,
-				h(Folder,{files:files,addFile:addFile,folder:folder})
+				h(Folder,{files:files,addFile:addFile})
 	)
 }
 export {Page}

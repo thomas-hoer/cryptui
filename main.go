@@ -52,7 +52,7 @@ func handleMiddleware(next http.Handler) http.Handler {
 		} else if strings.HasSuffix(r.RequestURI, ".js") {
 			w.Header().Add(contentType, "application/javascript")
 		} else if strings.HasSuffix(r.RequestURI, "json") { // .json or ?json
-			caching = false
+			caching = strings.HasPrefix(r.RequestURI, "/files/")
 			w.Header().Add(contentType, "application/json")
 		} else if !strings.HasSuffix(r.RequestURI, "/") {
 			caching = false

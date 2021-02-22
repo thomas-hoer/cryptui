@@ -105,4 +105,8 @@ body::-webkit-scrollbar {
 	padding: 8px;
 	box-shadow: 1px 2px 2px #aaaaaa;
 	background-color: #F5F5F6;
+	max-width:450px;
+}
+.file img{
+	width:100%;
 }
