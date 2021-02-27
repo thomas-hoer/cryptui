@@ -1,9 +1,8 @@
 'use strict'
 import {h,Fragment} from '/js/preact.js'
-import {useState,useEffect} from '/js/hooks.js'
+import {useState,useEffect,useRef} from '/js/hooks.js'
 import {Board} from '/component/board.js'
 import {Grid} from '/component/grid.js'
-
 
 function download(f){
 	fetch("/files/"+f.id+"/data.json").then(res=>res.json()).then(res=>{
@@ -25,58 +24,83 @@ function toBlob(file){
 	})
 }
 
-function Folder(props){
-	const [folder,setFolder] = useState('')
+async function upload(file){
+	const result = await toBlob(file)
+	const int8Array = new Uint8Array(result)
+	const enc = encrypt(int8Array)
+	return fetch("/files/",{
+		method:"POST",
+		headers: {
+			'Content-Type': 'application/file.instance'
+		},
+		body:JSON.stringify(enc)
+	}).then(res=>{return {id:res.headers.get('Id'),file:file}})
+}
+
+function uploadFiles(ev,afterUpload){
+	ev.preventDefault()
+	const files = ev.target[0].files
+	for (var i = 0; i < files.length; i++) {
+		upload(files[i]).then(afterUpload)
+	}
+	ev.target.reset()
+}
+
+function createThumbnail(id,file){
+	return new Promise(resolve => {
+		const reader = new FileReader()
+		reader.readAsDataURL(file)
+		reader.onload = event => {
+			const image = new Image()
+			image.src = event.target.result
+			const canvas = document.createElement("canvas")
+			canvas.width = 300
+			canvas.height = 150
+			const ctx = canvas.getContext('2d')
+			image.addEventListener('load', () => {
+				ctx.drawImage(image, 0, 0, 300, 150)
+				const thumbnail = encryptString(canvas.toDataURL("image/jpeg", 0.2))
+				fetch("/files/" + id + "/thumb.json", {
+					method: "PUT",
+					body: JSON.stringify(thumbnail)
+				}).then(resolve)
+			})
+		}
+	})
+}
+
+function Folder(){
+	const filesRef = useRef([])
+	const knownFiles = filesRef.current
+	const [files,setFiles] = useState(knownFiles)
+	const [newFolderName,setNewFolderName] = useState('')
 	const [folders,setFolders] = useState([])
 	useEffect(()=>{
+		fetch("files").then(res=>res.json()).then(res=>{
+			const json = decryptToString(res)
+			knownFiles.push(...JSON.parse(json))
+			setFiles([...knownFiles])
+		})
 		fetch("?json").then(res=>res.json()).then(setFolders)
 	},[true])
-	async function upload(file){
-		const result = await toBlob(file)
-		const int8Array = new Uint8Array(result)
-		const enc = encrypt(int8Array)
-		fetch("/files/",{
-			method:"POST",
-			headers: {
-				'Content-Type': 'application/file.instance'
-			},
+
+	const addFile = f => {
+		knownFiles.push(f)
+		const enc = encryptString(JSON.stringify(knownFiles))
+		fetch("files",{
+			method:"PUT",
 			body:JSON.stringify(enc)
-		}).then(res=>{
-			const id = res.headers.get('Id')
-			if(file.type.substring(0,5)=="image"){
-				const reader = new FileReader()
-				reader.readAsDataURL(file)
-				reader.onload = function(event) {
-					const image = new Image()
-					image.src = event.target.result;
-					const canvas = document.createElement("canvas")
-					canvas.width=300
-					canvas.height=150
-					const ctx = canvas.getContext('2d');
-					image.addEventListener('load', () => {
-						ctx.drawImage(image, 0, 0, 300, 150);
-						const thumbnail = encryptString(canvas.toDataURL("image/jpeg",0.2))
-						fetch("/files/"+id+"/thumb.json",{
-							method:"PUT",
-							body:JSON.stringify(thumbnail)
-						}).then(()=>props.addFile({name:file.name,id:id,thumb:true}))
-					})
-				}
-			}else{
-				props.addFile({name:file.name,id:id})
-			}
 		})
+		setFiles([...knownFiles])
 	}
-	async function submit(ev){
-		ev.preventDefault()
-		const files = ev.target[0].files
-		for (var i = 0; i < files.length; i++) {
-			upload(files[i])
+	const afterUpload = ({id,file})=>{
+		if(file.type.substring(0,5)=="image"){
+			createThumbnail(id,file).then(() => addFile({ name: file.name, id: id, thumb: true }))
+		}else{
+			addFile({name:file.name,id:id})
 		}
-		ev.target.reset()
-		return false
 	}
-	function addFolder(ev){
+	const addFolder = ev=> {
 		ev.preventDefault()
 		fetch(folder+"/type",{
 			method:"PUT",
@@ -89,14 +113,14 @@ function Folder(props){
 	return h(Fragment,null,
 			h(Grid,null,
 				h(Board,{title:"Upload"},
-					h('form',{onsubmit:submit},
+					h('form',{onsubmit:ev=>uploadFiles(ev,afterUpload)},
 						h('input',{type:'file',multiple:'multiple'}),
 						h('input',{type:'submit'})
 					)
 				),
 				h(Board,{title:"New Folder"},
 					h('form',{onsubmit:addFolder},
-						h('input',{type:'text',value:folder,onChange:ev=>setFolder(ev.target.value)}),
+						h('input',{type:'text',value:newFolderName,onChange:ev=>setNewFolderName(ev.target.value)}),
 						h('input',{type:'submit'})
 					)
 				)
@@ -105,7 +129,7 @@ function Folder(props){
 				folders.filter(f=>f.includes("/")).map(f=>h('a',{href:f,className:'folder'},f.replace("/","")))
 			),
 			h(Grid,null,
-				props.files.map(f=>h(ImageComp,{file:f}))
+				files.map(f=>h(ImageComp,{file:f}))
 			),
 		)
 }
