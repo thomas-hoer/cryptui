@@ -31,9 +31,7 @@ function Folder(props){
 	useEffect(()=>{
 		fetch("?json").then(res=>res.json()).then(setFolders)
 	},[true])
-	async function submit(ev){
-		ev.preventDefault()
-		const file = ev.target[0].files[0]
+	async function upload(file){
 		const result = await toBlob(file)
 		const int8Array = new Uint8Array(result)
 		const enc = encrypt(int8Array)
@@ -68,6 +66,14 @@ function Folder(props){
 				props.addFile({name:file.name,id:id})
 			}
 		})
+	}
+	async function submit(ev){
+		ev.preventDefault()
+		const files = ev.target[0].files
+		for (var i = 0; i < files.length; i++) {
+			upload(files[i])
+		}
+		ev.target.reset()
 		return false
 	}
 	function addFolder(ev){

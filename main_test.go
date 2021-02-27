@@ -15,22 +15,22 @@ var typeOfTests = []struct {
 	}},
 	{"", &http.Request{
 		Header: map[string][]string{
-			"Content-Type": []string{""},
+			"Content-Type": {""},
 		},
 	}},
 	{"a/b", &http.Request{
 		Header: map[string][]string{
-			"Content-Type": []string{"application/a.b"},
+			"Content-Type": {"application/a.b"},
 		},
 	}},
 	{"user", &http.Request{
 		Header: map[string][]string{
-			"Content-Type": []string{"application/user"},
+			"Content-Type": {"application/user"},
 		},
 	}},
 	{"plain", &http.Request{
 		Header: map[string][]string{
-			"Content-Type": []string{"text/plain"},
+			"Content-Type": {"text/plain"},
 		},
 	}},
 }

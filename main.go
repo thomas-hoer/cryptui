@@ -23,7 +23,7 @@ func main() {
 		user:     "data/user",
 	}
 	sh.init()
-	http.Handle("/", handleMiddleware(Gzip(sh)))
+	http.Handle("/", handleMiddleware(gzipper(sh)))
 	if len(os.Args) == 3 {
 		certFile := os.Args[1]
 		keyFile := os.Args[2]
