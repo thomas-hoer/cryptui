@@ -15,17 +15,64 @@ import (
 
 func main() {
 	c := make(chan bool)
-	js.Global().Set("decryptToString", js.FuncOf(decryptToString))
-	js.Global().Set("decryptToBase64", js.FuncOf(decryptToBase64))
-	js.Global().Set("encryptString", js.FuncOf(encryptString))
-	js.Global().Set("encrypt", js.FuncOf(encrypt))
-	js.Global().Set("createKey", js.FuncOf(createKey))
+	js.Global().Set("decryptToString", js.FuncOf(jsDecryptToString))
+	js.Global().Set("decryptToBase64", js.FuncOf(jsDecryptToBase64))
+	js.Global().Set("encryptString", js.FuncOf(jsEncryptString))
+	js.Global().Set("encrypt", js.FuncOf(jsEncrypt))
+	js.Global().Set("createKey", js.FuncOf(jsCreateKey))
+	js.Global().Set("encryptAES", js.FuncOf(jsEncryptAES))
+	js.Global().Set("decryptAES", js.FuncOf(jsDecryptAES))
 	<-c
 }
 
-func createKey(this js.Value, args []js.Value) interface{} {
+func jsCreateKey(this js.Value, args []js.Value) interface{} {
 	getRsaKey()
 	return nil
+}
+
+func jsEncryptAES(this js.Value, args []js.Value) interface{} {
+	secretMessage := args[0].String()
+	password := args[1].String()
+	return encryptAES(secretMessage, password)
+}
+
+func jsDecryptAES(this js.Value, args []js.Value) interface{} {
+	secretMessage := args[0]
+	password := args[1].String()
+	return decryptAES(secretMessage, password)
+}
+func decryptAES(input js.Value, password string) string {
+	ciphertext, _ := base64.StdEncoding.DecodeString(input.Get("data").String())
+	salt, _ := base64.StdEncoding.DecodeString(input.Get("salt").String())
+	nonce, _ := base64.StdEncoding.DecodeString(input.Get("nonce").String())
+	sha := sha256.New()
+	sha.Write(salt)
+	aesKey := sha.Sum([]byte(password))[:16]
+
+	block, _ := aes.NewCipher(aesKey)
+	aesGCM, _ := cipher.NewGCM(block)
+	plain, _ := aesGCM.Open(nil, nonce, ciphertext, nil)
+	return string(plain)
+}
+func encryptAES(secretMessage string, password string) map[string]interface{} {
+	nonce := make([]byte, 12)
+	rand.Read(nonce)
+	salt := make([]byte, 12)
+	rand.Read(salt)
+
+	sha := sha256.New()
+	sha.Write(salt)
+	aesKey := sha.Sum([]byte(password))[:16]
+	block, _ := aes.NewCipher(aesKey)
+	aesGCM, _ := cipher.NewGCM(block)
+	ciphertext := aesGCM.Seal(nil, nonce, []byte(secretMessage), nil)
+	result := make(map[string]interface{})
+
+	result["data"] = base64.StdEncoding.EncodeToString(ciphertext)
+	result["nonce"] = base64.StdEncoding.EncodeToString(nonce)
+	result["salt"] = base64.StdEncoding.EncodeToString(salt)
+
+	return result
 }
 
 func encryptData(secretMessage []byte) map[string]interface{} {
@@ -50,12 +97,12 @@ func encryptData(secretMessage []byte) map[string]interface{} {
 	return result
 }
 
-func encryptString(this js.Value, args []js.Value) interface{} {
+func jsEncryptString(this js.Value, args []js.Value) interface{} {
 	secretMessage := []byte(args[0].String())
 	return encryptData(secretMessage)
 }
 
-func encrypt(this js.Value, args []js.Value) interface{} {
+func jsEncrypt(this js.Value, args []js.Value) interface{} {
 	input := args[0]
 	size := input.Length()
 	secretMessage := make([]byte, size)
@@ -70,18 +117,27 @@ func decrypt(input js.Value) []byte {
 	ciphertextKey, _ := base64.StdEncoding.DecodeString(input.Get("key").String())
 	nonce, _ := base64.StdEncoding.DecodeString(input.Get("nonce").String())
 	rsaKey := getRsaKey()
-	aesKey, _ := rsa.DecryptOAEP(sha256.New(), rng, rsaKey, ciphertextKey, label)
+	aesKey, err := rsa.DecryptOAEP(sha256.New(), rng, rsaKey, ciphertextKey, label)
+	if err != nil {
+		return nil
+	}
 	block, _ := aes.NewCipher(aesKey)
-	aesGCM, _ := cipher.NewGCM(block)
-	plain, _ := aesGCM.Open(nil, nonce, ciphertext, nil)
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil
+	}
+	plain, err := aesGCM.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil
+	}
 	return plain
 }
 
-func decryptToString(this js.Value, args []js.Value) interface{} {
+func jsDecryptToString(this js.Value, args []js.Value) interface{} {
 	return string(decrypt(args[0]))
 }
 
-func decryptToBase64(this js.Value, args []js.Value) interface{} {
+func jsDecryptToBase64(this js.Value, args []js.Value) interface{} {
 	return base64.StdEncoding.EncodeToString(decrypt(args[0]))
 }
 

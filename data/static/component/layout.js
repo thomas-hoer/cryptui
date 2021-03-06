@@ -8,7 +8,7 @@ function Layout(props){
 	return h(Fragment,null,
 			h('div',{className:'header'},
 					h('div',null,props.title),
-					h('div',null,'Profile'),
+					h('a',{href:'/profile/'},'My Profile'),
 					),
 			h('div',{className:'body'},
 					h('div',{className:'content-wrapper'},props.children)
