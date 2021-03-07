@@ -111,12 +111,12 @@ function Folder () {
   }
   const addFolder = (ev) => {
     ev.preventDefault()
-    fetch(folder + '/type', {
+    fetch(newFolderName + '/type', {
       method: 'PUT',
       body: 'folder/instance'
     }).then(() => {
-      setFolders([...folders, folder + '/'])
-      setFolder('')
+      setFolders([...folders, newFolderName + '/'])
+      setNewFolderName('')
     })
   }
   return h(Fragment, null,
