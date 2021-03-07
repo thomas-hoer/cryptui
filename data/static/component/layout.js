@@ -8,6 +8,7 @@ import { h, Fragment } from '/js/preact.js'
  * @return {object} vdom of the component
  */
 function Layout (props) {
+  let titleIcon
   if (props.backButton && window.history.length > 1) {
     titleIcon = h('img', {
       className: 'header-back',
@@ -17,7 +18,7 @@ function Layout (props) {
   }
   return h(Fragment, null,
     h('div', { className: 'header' },
-      h('div', null, props.title),
+      h('div', null, titleIcon, props.title),
       h('a', { href: '/profile/' }, 'My Profile')
     ),
     h('div', { className: 'body' },

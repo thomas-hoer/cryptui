@@ -16,6 +16,7 @@ function Page () {
     fetch('data.json').then((res) => res.json()).then(setUser)
   }, [true])
   const layoutOptions = {
+    backButton: true,
     title: user.name
   }
   return h(Layout, layoutOptions,

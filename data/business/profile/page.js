@@ -20,6 +20,7 @@ function Page () {
     }, [true])
   }
   const layoutOptions = {
+    backButton: true,
     title: 'Profile'
   }
   const download = (dat) => {
