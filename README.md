@@ -8,8 +8,10 @@ CryptUI is an aproach to provide a secure file hosting provider. It features an 
 - Upload / Download with client side encryption
 - Thumbnails
 - Directories
+- Multi-Device per user
 
 ### Open Tasks
 - Share Files with other users
-- Multi-Device per user
 - PWA
+- Avoid data loss when using 2 devices at the same time
+- Show 2 columns of thumbnails on mobile devices

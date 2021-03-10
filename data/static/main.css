@@ -114,3 +114,23 @@ body::-webkit-scrollbar {
 .file img{
 	width:100%;
 }
+
+.notification{
+    position: fixed;
+	padding: 8px;
+    background-color: #FFF;
+	box-shadow: 1px 2px 2px #aaaaaa;
+    bottom: 5px;
+    right: 5px;
+}
+
+.button{
+	color: #FFF;
+    display: table;
+    background-color: #37474f;
+    box-shadow: 1px 2px 2px #aaaaaa;
+    font-size: 20px;
+    padding: 5px;
+    margin: 10px auto 0px auto;
+	cursor: pointer;
+}

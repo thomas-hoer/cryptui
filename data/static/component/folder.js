@@ -39,11 +39,16 @@ const upload = async (file) => {
   })
 }
 
-const uploadFiles = (ev, afterUpload) => {
+const uploadFiles = (ev, afterUpload, addUpload) => {
   ev.preventDefault()
   const files = ev.target[0].files
   for (let i = 0; i < files.length; i++) {
-    upload(files[i]).then(afterUpload)
+    const uploadElement = { name: files[i].name }
+    upload(files[i]).then(e => {
+      uploadElement.upload = true
+      afterUpload(e)
+    })
+    addUpload(uploadElement)
   }
   ev.target.reset()
 }
@@ -83,6 +88,8 @@ function Folder () {
   const [files, setFiles] = useState(knownFiles)
   const [newFolderName, setNewFolderName] = useState('')
   const [folders, setFolders] = useState([])
+  const uploadListRef = useRef([])
+  const [uploadList, setUploadList] = useState([])
   useEffect(() => {
     fetch('files').then((res) => res.json()).then((res) => {
       const json = decryptToString(res)
@@ -92,7 +99,15 @@ function Folder () {
     fetch('?json').then((res) => res.json()).then(setFolders)
   }, [true])
 
-  const addFile = (f) => {
+  const clearUploadList = () => {
+    uploadListRef.current = uploadListRef.current.filter(el => !el.upload)
+    setUploadList([...uploadListRef.current])
+  }
+  const addUpload = up => {
+    uploadListRef.current.push(up)
+    setUploadList([...uploadListRef.current])
+  }
+  const addFile = f => {
     knownFiles.push(f)
     const enc = encryptString(JSON.stringify(knownFiles))
     fetch('files', {
@@ -109,7 +124,7 @@ function Folder () {
       addFile({ name: file.name, id: id })
     }
   }
-  const addFolder = (ev) => {
+  const addFolder = ev => {
     ev.preventDefault()
     fetch(newFolderName + '/type', {
       method: 'PUT',
@@ -122,7 +137,7 @@ function Folder () {
   return h(Fragment, null,
     h(Grid, null,
       h(Board, { title: 'Upload' },
-        h('form', { onsubmit: (ev) => uploadFiles(ev, afterUpload) },
+        h('form', { onsubmit: (ev) => uploadFiles(ev, afterUpload, addUpload) },
           h('input', { type: 'file', multiple: 'multiple' }),
           h('input', { type: 'submit' })
         )
@@ -148,7 +163,16 @@ function Folder () {
     ),
     h(Grid, null,
       files.map((f) => h(ImageComp, { file: f }))
-    )
+    ),
+    uploadList.length === 0
+      ? null
+      : h('div', { className: 'notification' },
+        ...uploadList.map(f => h('div', null,
+          h('img', { src: f.upload ? '/assets/ok.png' : '/assets/loading.png' }),
+          f.name
+        )),
+        h('div', { className: 'button', onclick: clearUploadList }, 'Clear')
+      )
   )
 }
 /**
