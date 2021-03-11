@@ -24,27 +24,30 @@ const toBlob = (file) => {
   })
 }
 
-const upload = async (file) => {
+const upload = async (file, userId) => {
   const result = await toBlob(file)
   const int8Array = new Uint8Array(result)
   const enc = encrypt(int8Array)
+  const body = JSON.stringify(enc)
   return fetch('/files/', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/file.instance'
+      'Content-Type': 'application/file.instance',
+      'User-Id': userId,
+      signature: signFile(body)
     },
-    body: JSON.stringify(enc)
+    body: body
   }).then((res) => {
     return { id: res.headers.get('Id'), file: file }
   })
 }
 
-const uploadFiles = (ev, afterUpload, addUpload) => {
+const uploadFiles = (ev, afterUpload, addUpload, userId) => {
   ev.preventDefault()
   const files = ev.target[0].files
   for (let i = 0; i < files.length; i++) {
     const uploadElement = { name: files[i].name }
-    upload(files[i]).then(e => {
+    upload(files[i], userId).then(e => {
       uploadElement.upload = true
       afterUpload(e)
     })
@@ -67,9 +70,12 @@ const createThumbnail = (id, file) => {
       image.addEventListener('load', () => {
         ctx.drawImage(image, 0, 0, 300, 150)
         const thumbnail = encryptString(canvas.toDataURL('image/jpeg', 0.2))
+        const body = JSON.stringify(thumbnail)
+        const sign = signFile(body)
         fetch('/files/' + id + '/thumb.json', {
           method: 'PUT',
-          body: JSON.stringify(thumbnail)
+          body: body,
+          headers: { signature: sign }
         }).then(resolve)
       })
     }
@@ -83,6 +89,7 @@ const createThumbnail = (id, file) => {
  * @return {object} vdom of the component
  */
 function Folder () {
+  const userId = localStorage.getItem('userId')
   const filesRef = useRef([])
   const knownFiles = filesRef.current
   const [files, setFiles] = useState(knownFiles)
@@ -110,9 +117,12 @@ function Folder () {
   const addFile = f => {
     knownFiles.push(f)
     const enc = encryptString(JSON.stringify(knownFiles))
+    const body = JSON.stringify(enc)
+    const sign = signFile(body)
     fetch('files', {
       method: 'PUT',
-      body: JSON.stringify(enc)
+      body: body,
+      headers: { signature: sign }
     })
     setFiles([...knownFiles])
   }
@@ -128,7 +138,8 @@ function Folder () {
     ev.preventDefault()
     fetch(newFolderName + '/type', {
       method: 'PUT',
-      body: 'folder/instance'
+      body: 'folder/instance',
+      headers: { signature: signFile('folder/instance') }
     }).then(() => {
       setFolders([...folders, newFolderName + '/'])
       setNewFolderName('')
@@ -137,7 +148,7 @@ function Folder () {
   return h(Fragment, null,
     h(Grid, null,
       h(Board, { title: 'Upload' },
-        h('form', { onsubmit: (ev) => uploadFiles(ev, afterUpload, addUpload) },
+        h('form', { onsubmit: (ev) => uploadFiles(ev, afterUpload, addUpload, userId) },
           h('input', { type: 'file', multiple: 'multiple' }),
           h('input', { type: 'submit' })
         )

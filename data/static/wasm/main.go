@@ -3,6 +3,7 @@
 package main
 
 import (
+	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -22,9 +23,19 @@ func main() {
 	js.Global().Set("createKey", js.FuncOf(jsCreateKey))
 	js.Global().Set("encryptAES", js.FuncOf(jsEncryptAES))
 	js.Global().Set("decryptAES", js.FuncOf(jsDecryptAES))
+	js.Global().Set("signFile", js.FuncOf(jsSign))
 	<-c
 }
 
+func jsSign(this js.Value, args []js.Value) interface{} {
+	rng := rand.Reader
+	input := args[0].String()
+
+	rsaPrivateKey := getRsaKey()
+	hashed := sha256.Sum256([]byte(input))
+	signature, _ := rsa.SignPKCS1v15(rng, rsaPrivateKey, crypto.SHA256, hashed[:])
+	return base64.StdEncoding.EncodeToString(signature)
+}
 func jsCreateKey(this js.Value, args []js.Value) interface{} {
 	getRsaKey()
 	return nil

@@ -1,6 +1,12 @@
 package main
 
 import (
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"io"
 	"log"
 	"math/rand"
@@ -200,18 +206,63 @@ func (handler *storageHandler) handlePostUser(resp http.ResponseWriter, req *htt
 	os.MkdirAll(newPath, os.ModePerm)
 	os.WriteFile(newPath+"type", []byte(contentType), os.ModePerm)
 	os.WriteFile(newPath+"data.json", []byte(newDataString), os.ModePerm)
+	if len(req.Header["User-Id"]) != 0 {
+		userID := req.Header["User-Id"][0]
+		os.WriteFile(newPath+"user", []byte(userID), os.ModePerm)
+	}
 	resp.Header().Add("Id", newID)
 	resp.Header().Add("Location", req.RequestURI+newID+"/")
 	resp.WriteHeader(201)
 }
 
+type userData struct {
+	Name string `json:"name"`
+	Key  string `json:"key"`
+}
+
+func getUserData(userSpace, filename string) *userData {
+	var dir string = filename
+	for dir != "." {
+		dir = path.Dir(dir)
+		if typeDat, err := os.ReadFile(dir + string(os.PathSeparator) + "type"); err == nil {
+			typeName := string(typeDat)
+			if typeName == "user/instance" {
+				var userData userData
+				dat, _ := os.ReadFile(dir + string(os.PathSeparator) + "data.json")
+				json.Unmarshal(dat, &userData)
+				return &userData
+			}
+		}
+		if userID, err := os.ReadFile(dir + string(os.PathSeparator) + "user"); err == nil {
+			return getUserData(userSpace, userSpace+"/user/"+string(userID)+"/")
+		}
+	}
+	return nil
+}
+
 func (handler *storageHandler) handlePutUser(resp http.ResponseWriter, req *http.Request) {
 	filename := handler.user + req.RequestURI
-	os.MkdirAll(path.Dir(filename), os.ModePerm)
+	dir := path.Dir(filename)
+	os.MkdirAll(dir, os.ModePerm)
+	userData := getUserData(handler.user, filename)
 	newData, _ := io.ReadAll(req.Body)
-	newDataString := string(newData)
-	os.WriteFile(filename, []byte(newDataString), os.ModePerm)
-	resp.WriteHeader(204)
+	if userData != nil {
+		keyData, _ := base64.StdEncoding.DecodeString(userData.Key)
+		pubKey, _ := x509.ParsePKCS1PublicKey(keyData)
+
+		hashed := sha256.Sum256(newData)
+		if len(req.Header["Signature"]) != 0 {
+			signature, _ := base64.StdEncoding.DecodeString(req.Header["Signature"][0])
+			err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], signature)
+			if err == nil {
+				os.WriteFile(filename, newData, os.ModePerm)
+				resp.WriteHeader(204)
+			} else {
+				resp.WriteHeader(403)
+			}
+		}
+	}
+	resp.WriteHeader(403)
 }
 
 func typeOf(req *http.Request) string {
