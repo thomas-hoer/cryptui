@@ -80,10 +80,18 @@ type storageHandler struct {
 	static   string
 	business string
 	user     string
+	index    []byte
 }
 
 func (handler *storageHandler) init() {
-	os.MkdirAll(handler.static, os.ModePerm)
+	// index is the most important part of the website. If it is not present
+	// the application should not start. Also it makes sense to cache the data
+	// since it is the most aquired resource of your website.
+	if index, err := os.ReadFile(handler.static + "/index.html"); err == nil {
+		handler.index = index
+	} else {
+		log.Panic(err)
+	}
 	os.MkdirAll(handler.business, os.ModePerm)
 	os.MkdirAll(handler.user, os.ModePerm)
 }
@@ -103,7 +111,7 @@ func (handler *storageHandler) ServeHTTP(resp http.ResponseWriter, req *http.Req
 		handler.handlePutUser(resp, req)
 	} else {
 		resp.Header().Set("Allow", "GET, POST")
-		resp.WriteHeader(405)
+		resp.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
@@ -115,18 +123,27 @@ func (handler *storageHandler) handleGetUser(resp http.ResponseWriter, requestUR
 	} else if fileInfo.IsDir() {
 		if !strings.HasSuffix(filename, "/") {
 			resp.Header().Set("Location", requestURI+"/")
-			resp.WriteHeader(301)
+			resp.WriteHeader(http.StatusMovedPermanently)
 		} else {
 			handler.handleGetIndex(resp, handler.user, requestURI, queryParam)
 		}
 	} else {
-		dat, _ := os.ReadFile(filename)
-		resp.Write(dat)
+		if dat, err := os.ReadFile(filename); err == nil {
+			resp.Write(dat)
+		} else {
+			log.Print(err.Error())
+			resp.WriteHeader(http.StatusNotFound)
+		}
 	}
 }
 
 func (handler *storageHandler) handleGetIndex(resp http.ResponseWriter, base, requestURI, queryParam string) {
-	fileInfos, _ := os.ReadDir(base + requestURI)
+	fileInfos, err := os.ReadDir(base + requestURI)
+	if err != nil {
+		log.Print(err.Error())
+		resp.WriteHeader(http.StatusNotFound)
+		return
+	}
 	names := make([]string, 0)
 	for _, fileInfo := range fileInfos {
 		if fileInfo.IsDir() {
@@ -141,63 +158,71 @@ func (handler *storageHandler) handleGetIndex(resp http.ResponseWriter, base, re
 		resp.Write([]byte(jsonOutput))
 	} else {
 		resp.Header().Add(contentType, "text/html")
-		data, _ := os.ReadFile(handler.static + "/index.html")
-		resp.Write(data)
+		resp.Write(handler.index)
 	}
 }
 
 func (handler *storageHandler) handleGetType(resp http.ResponseWriter, requestURI, queryParam string) {
 	typefile := filepath.Dir(handler.user+requestURI) + "/type"
 	if fileInfo, err := os.Stat(typefile); err == nil && !fileInfo.IsDir() {
-		dat, _ := os.ReadFile(typefile)
-		typeRoot := string(dat)
-		filename := filepath.Base(handler.user + requestURI)
-		redirect := "/" + typeRoot + "/" + filename
-		if redirect == requestURI {
-			handler.handleGetStatic(resp, requestURI, queryParam)
-		} else {
-			resp.Header().Add("Location", redirect)
-			resp.WriteHeader(303)
+		if dat, err := os.ReadFile(typefile); err == nil {
+			typeRoot := string(dat)
+			filename := filepath.Base(handler.user + requestURI)
+			redirect := "/" + typeRoot + "/" + filename
+			if redirect == requestURI {
+				handler.handleGetStatic(resp, requestURI, queryParam)
+			} else {
+				resp.Header().Add("Location", redirect)
+				resp.WriteHeader(http.StatusSeeOther)
+			}
+			return
 		}
-	} else {
-		handler.handleGetStatic(resp, requestURI, queryParam)
 	}
+
+	handler.handleGetStatic(resp, requestURI, queryParam)
 }
 func (handler *storageHandler) handleGetStatic(resp http.ResponseWriter, requestURI, queryParam string) {
 	if fileInfo, err := os.Stat(handler.static + requestURI); err == nil && !fileInfo.IsDir() {
-		dat, _ := os.ReadFile(handler.static + requestURI)
-		resp.Write(dat)
-	} else {
-		handler.handleGetBusiness(resp, requestURI, queryParam)
+		if dat, err := os.ReadFile(handler.static + requestURI); err == nil {
+			resp.Write(dat)
+			return
+		}
 	}
+
+	handler.handleGetBusiness(resp, requestURI, queryParam)
 }
+
 func (handler *storageHandler) handleGetBusiness(resp http.ResponseWriter, requestURI, queryParam string) {
 	if fileInfo, err := os.Stat(handler.business + requestURI); err == nil {
-		if !fileInfo.IsDir() {
-			dat, _ := os.ReadFile(handler.business + requestURI)
-			resp.Write(dat)
-		} else {
+		if fileInfo.IsDir() {
 			handler.handleGetIndex(resp, handler.business, requestURI, queryParam)
+			return
+		} else if dat, err := os.ReadFile(handler.business + requestURI); err == nil {
+			resp.Write(dat)
+			return
 		}
-		return
 	}
-	resp.WriteHeader(404)
+	resp.WriteHeader(http.StatusNotFound)
 }
 
 func (handler *storageHandler) handlePostUser(resp http.ResponseWriter, req *http.Request) {
 	filename := handler.user + req.RequestURI
 	fileInfo, err := os.Stat(filename)
 	if os.IsNotExist(err) {
-		resp.WriteHeader(404)
+		resp.WriteHeader(http.StatusNotFound)
 		return
 	} else if !fileInfo.IsDir() {
 		resp.Header().Set("Allow", "GET")
-		resp.WriteHeader(405)
+		resp.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	contentType := typeOf(req)
-	newData, _ := io.ReadAll(req.Body)
+	newData, err := io.ReadAll(req.Body)
+	if err != nil {
+		resp.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	newDataString := string(newData)
 
 	newID := strconv.Itoa(rand.Int())
@@ -212,7 +237,7 @@ func (handler *storageHandler) handlePostUser(resp http.ResponseWriter, req *htt
 	}
 	resp.Header().Add("Id", newID)
 	resp.Header().Add("Location", req.RequestURI+newID+"/")
-	resp.WriteHeader(201)
+	resp.WriteHeader(http.StatusCreated)
 }
 
 type userData struct {
@@ -228,9 +253,11 @@ func getUserData(userSpace, filename string) *userData {
 			typeName := string(typeDat)
 			if typeName == "user/instance" {
 				var userData userData
-				dat, _ := os.ReadFile(dir + string(os.PathSeparator) + "data.json")
-				json.Unmarshal(dat, &userData)
-				return &userData
+				if dat, err := os.ReadFile(dir + string(os.PathSeparator) + "data.json"); err == nil {
+					json.Unmarshal(dat, &userData)
+					return &userData
+				}
+				return nil
 			}
 		}
 		if userID, err := os.ReadFile(dir + string(os.PathSeparator) + "user"); err == nil {
@@ -245,24 +272,32 @@ func (handler *storageHandler) handlePutUser(resp http.ResponseWriter, req *http
 	dir := path.Dir(filename)
 	os.MkdirAll(dir, os.ModePerm)
 	userData := getUserData(handler.user, filename)
-	newData, _ := io.ReadAll(req.Body)
 	if userData != nil {
-		keyData, _ := base64.StdEncoding.DecodeString(userData.Key)
-		pubKey, _ := x509.ParsePKCS1PublicKey(keyData)
+		keyData, err := base64.StdEncoding.DecodeString(userData.Key)
+		if err != nil {
+			return
+		}
+		pubKey, err := x509.ParsePKCS1PublicKey(keyData)
+		if err != nil {
+			return
+		}
 
+		newData, err := io.ReadAll(req.Body)
+		if err != nil {
+			return
+		}
 		hashed := sha256.Sum256(newData)
 		if len(req.Header["Signature"]) != 0 {
-			signature, _ := base64.StdEncoding.DecodeString(req.Header["Signature"][0])
-			err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], signature)
-			if err == nil {
-				os.WriteFile(filename, newData, os.ModePerm)
-				resp.WriteHeader(204)
-			} else {
-				resp.WriteHeader(403)
+			if signature, err := base64.StdEncoding.DecodeString(req.Header["Signature"][0]); err == nil {
+				if err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], signature); err == nil {
+					os.WriteFile(filename, newData, os.ModePerm)
+					resp.WriteHeader(http.StatusNoContent)
+					return
+				}
 			}
 		}
 	}
-	resp.WriteHeader(403)
+	resp.WriteHeader(http.StatusForbidden)
 }
 
 func typeOf(req *http.Request) string {
