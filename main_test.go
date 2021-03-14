@@ -2,10 +2,17 @@ package main
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
+	"encoding/base64"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -174,6 +181,9 @@ func TestStorageHandlerInit(t *testing.T) {
 	if string(sh.index) != index {
 		t.Errorf("storageHandler.init() index: expected %s, actual %s", index, sh.index)
 	}
+	if id := sh.idGenerator(""); id == "" {
+		t.Errorf("storageHandler.init() idGenerator: expected not empty, actual empty")
+	}
 }
 
 func readFile(filename string) []byte {
@@ -203,16 +213,256 @@ var serveHTTPGetTests = []struct {
 	{"/folder/instance/", 0, "text/html", "", readFile("data/static/index.html")},
 }
 
+// The following privateKey and publicKey constants represent a 512 bit rsa key
+// pair. It should not be used outside this test. First of all, it is public
+// visible on github and maybe others. Second, it is a 512 bit key, which is
+// considered as not secure, due to its size. Using a small key makes the test
+// faster.
+const privateKey = "MIIBOgIBAAJBAOOK4kUijqVb9zm7riuF126Zm+111AF3YpepnF6CUTdp7HY9jVdvmYZaw8lsdk3JjmvK7EiTr+I0pzeBivuZBacCAwEAAQJBAJaEUJka+vE3nJp8JAJ2TsPCqPqzbsJpjrZ0ZBPAcKkOESNI3XGwXn5m+M1FBLQ7HQIw8QIAbZScR67HUL/GIoECIQDzb0CjtHGECZLLhstybf79ww9EDf8pyWRWZGT1drrRSQIhAO9Joihzz70/hjb4tZnDWmg8kBT17iSPtXUWe8cgrQ9vAiBpHZIQ3lriA+xCPCtfdwXTd8YAwfZ7ib3s3B8IK0OSGQIgVxaJegeMV+hCxMcH8Qp0YPOJzNck8RGMjSy9p99wnOkCIBuNZ0yYrlf+TZ2tP/fujdoDqmRwAa8xEdk354dAJ7dM"
+const publicKey = "MEgCQQDjiuJFIo6lW/c5u64rhddumZvtddQBd2KXqZxeglE3aex2PY1Xb5mGWsPJbHZNyY5ryuxIk6/iNKc3gYr7mQWnAgMBAAE="
+
+var nextId int
+
+func signData(data string) string {
+	b64 := base64.StdEncoding
+	pkBytes, _ := b64.DecodeString(privateKey)
+	pk, _ := x509.ParsePKCS1PrivateKey(pkBytes)
+
+	hashed := sha256.Sum256([]byte(data))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, pk, crypto.SHA256, hashed[:])
+	return b64.EncodeToString(signature)
+}
+
 var serveHTTPPostTests = []struct {
-	method       string
-	request      string
-	requestBody  []byte
-	statusCode   int
-	responseBody []byte
-	hasId        bool
+	method        string
+	request       string
+	requestBody   []byte
+	requestHeader map[string][]string
+	statusCode    int
+	responseBody  []byte
+	headerID      string
+	location      string
 }{
-	{"POST", "/user/", []byte("{}"), 201, []byte(""), true},
-	{"PUT", "/user/files", []byte("{}"), 403, []byte(""), false},
+	{ //#0
+		"POST",
+		"/user/",
+		[]byte(`{"name":"a","key":"` + publicKey + `"}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusCreated,
+		[]byte(""),
+		"1",
+		"/user/1/",
+	},
+	{ //#1
+		"PUT",
+		"/user/1/files",
+		[]byte("{}"),
+		map[string][]string{},
+		http.StatusForbidden,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#2
+		"PUT",
+		"/user/1/files",
+		[]byte("{}"),
+		map[string][]string{
+			"Signature": {signData("{}")},
+		},
+		http.StatusAccepted,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#3
+		"GET",
+		"/user/1/files",
+		[]byte{},
+		map[string][]string{},
+		0,
+		[]byte("{}"),
+		"",
+		"",
+	},
+	{ //#4
+		"PUT",
+		"/user/1/files",
+		[]byte("{...}"),
+		map[string][]string{
+			"Signature": {signData("{/}")},
+		},
+		http.StatusForbidden,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#5
+		"GET",
+		"/user/1/files",
+		[]byte{},
+		map[string][]string{},
+		0,
+		[]byte("{}"),
+		"",
+		"",
+	},
+	{ //#6
+		"POST",
+		"/user/",
+		[]byte(`{}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusBadRequest,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#7
+		"POST",
+		"/user/",
+		[]byte(`{"name":"a","key":"` + publicKey + `"}`),
+		map[string][]string{
+			"Content-Type": {""},
+		},
+		http.StatusUnsupportedMediaType,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#8
+		"POST",
+		"/user/",
+		[]byte(`////`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusBadRequest,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#9
+		"POST",
+		"/user/",
+		nil,
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusBadRequest,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#10
+		"POST",
+		"/use/",
+		[]byte(`{"name":"a","key":"` + publicKey + `"}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusNotFound,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#11
+		"POST",
+		"/",
+		[]byte(`{"name":"a","key":"` + publicKey + `"}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusMethodNotAllowed,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#12
+		"POST",
+		"/index.html",
+		[]byte(`{"name":"a","key":"` + publicKey + `"}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusNotFound,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#13
+		"POST",
+		"/page.js",
+		[]byte(`{"name":"a","key":"` + publicKey + `"}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusNotFound,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#14
+		"PATCH",
+		"/user/1/files",
+		[]byte(`{}`),
+		map[string][]string{},
+		http.StatusMethodNotAllowed,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#15
+		"POST",
+		"/user/",
+		[]byte(`{"name":"b","key":"AAAA"}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusCreated,
+		[]byte(""),
+		"2",
+		"/user/2/",
+	},
+	{ //#16
+		"PUT",
+		"/user/2/files",
+		[]byte("{}"),
+		map[string][]string{
+			"Signature": {signData("{}")},
+		},
+		http.StatusInternalServerError,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#17
+		"POST",
+		"/user/",
+		[]byte(`{"name":"c","key":"!!!!"}`),
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusCreated,
+		[]byte(""),
+		"3",
+		"/user/3/",
+	},
+	{ //#18
+		"PUT",
+		"/user/3/files",
+		[]byte("{}"),
+		map[string][]string{
+			"Signature": {signData("{}")},
+		},
+		http.StatusInternalServerError,
+		[]byte(""),
+		"",
+		"",
+	},
 }
 
 func TestStorageHandlerServeHTTP(t *testing.T) {
@@ -225,6 +475,10 @@ func TestStorageHandlerServeHTTP(t *testing.T) {
 		static:   "data/static",
 		business: "data/business",
 		user:     dir,
+		idGenerator: func(contentType string) string {
+			nextId += 1
+			return strconv.Itoa(nextId)
+		},
 	}
 	userDir := dir + pathSeparator + "user" + pathSeparator + "1"
 	profileDir := dir + pathSeparator + "profile"
@@ -265,11 +519,12 @@ func TestStorageHandlerServeHTTP(t *testing.T) {
 			header: make(map[string][]string),
 		}
 		req := &http.Request{
-			Header:     make(map[string][]string),
+			Header:     e.requestHeader,
 			Method:     e.method,
 			RequestURI: e.request,
 			Body:       io.NopCloser(bytes.NewReader(e.requestBody)),
 		}
+
 		sh.ServeHTTP(resp, req)
 		if resp.statusCode != e.statusCode {
 			t.Errorf("storageHandler.ServeHTTP()#%d resp.statusCode: expected: %d, actual: %d", i, e.statusCode, resp.statusCode)
@@ -277,8 +532,11 @@ func TestStorageHandlerServeHTTP(t *testing.T) {
 		if !bytes.Equal(resp.body, e.responseBody) {
 			t.Errorf("storageHandler.ServeHTTP()#%d resp.body: expected: %s, actual: %s", i, e.responseBody, resp.body)
 		}
-		if idHeader, ok := resp.header["Id"]; ok != e.hasId {
-			t.Errorf("storageHandler.ServeHTTP()#%d resp.header['Id']: expected: %t, actual: %t (%s)", i, e.hasId, ok, idHeader)
+		if headerID := resp.header.Get("Id"); headerID != e.headerID {
+			t.Errorf("storageHandler.ServeHTTP()#%d resp.header['Id']: expected: %s, actual: %s", i, e.headerID, headerID)
+		}
+		if headerLocation := resp.header.Get("Location"); headerLocation != e.location {
+			t.Errorf("storageHandler.ServeHTTP()#%d resp.header['Location']: expected: %s, actual: %s", i, e.location, headerLocation)
 		}
 	}
 }

@@ -77,10 +77,11 @@ func handleMiddleware(next http.Handler) http.Handler {
 }
 
 type storageHandler struct {
-	static   string
-	business string
-	user     string
-	index    []byte
+	static      string
+	business    string
+	user        string
+	index       []byte
+	idGenerator func(string) string
 }
 
 func (handler *storageHandler) init() {
@@ -94,6 +95,11 @@ func (handler *storageHandler) init() {
 	}
 	os.MkdirAll(handler.business, os.ModePerm)
 	os.MkdirAll(handler.user, os.ModePerm)
+	if handler.idGenerator == nil {
+		handler.idGenerator = func(contentType string) string {
+			return strconv.Itoa(rand.Int())
+		}
+	}
 }
 
 func (handler *storageHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
@@ -211,21 +217,38 @@ func (handler *storageHandler) handlePostUser(resp http.ResponseWriter, req *htt
 	if os.IsNotExist(err) {
 		resp.WriteHeader(http.StatusNotFound)
 		return
-	} else if !fileInfo.IsDir() {
+	} else if !fileInfo.IsDir() || req.RequestURI == "/" {
 		resp.Header().Set("Allow", "GET")
 		resp.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	contentType := typeOf(req)
+	if contentType == "" {
+		resp.WriteHeader(http.StatusUnsupportedMediaType)
+		return
+	}
 	newData, err := io.ReadAll(req.Body)
 	if err != nil {
 		resp.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if contentType == "user/instance" {
+		var userData userData
+		if err := json.Unmarshal(newData, &userData); err == nil {
+			if userData.Key == "" || userData.Name == "" {
+				resp.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		} else {
+			resp.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
+
 	newDataString := string(newData)
 
-	newID := strconv.Itoa(rand.Int())
+	newID := handler.idGenerator(contentType)
 	newPath := filename + newID + "/"
 
 	os.MkdirAll(newPath, os.ModePerm)
@@ -275,15 +298,18 @@ func (handler *storageHandler) handlePutUser(resp http.ResponseWriter, req *http
 	if userData != nil {
 		keyData, err := base64.StdEncoding.DecodeString(userData.Key)
 		if err != nil {
+			resp.WriteHeader(500)
 			return
 		}
 		pubKey, err := x509.ParsePKCS1PublicKey(keyData)
 		if err != nil {
+			resp.WriteHeader(500)
 			return
 		}
 
 		newData, err := io.ReadAll(req.Body)
 		if err != nil {
+			resp.WriteHeader(400)
 			return
 		}
 		hashed := sha256.Sum256(newData)
@@ -291,7 +317,7 @@ func (handler *storageHandler) handlePutUser(resp http.ResponseWriter, req *http
 			if signature, err := base64.StdEncoding.DecodeString(req.Header["Signature"][0]); err == nil {
 				if err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], signature); err == nil {
 					os.WriteFile(filename, newData, os.ModePerm)
-					resp.WriteHeader(http.StatusNoContent)
+					resp.WriteHeader(http.StatusAccepted)
 					return
 				}
 			}
