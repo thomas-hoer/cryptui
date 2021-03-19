@@ -45,13 +45,22 @@ const upload = async (file, userId) => {
 const uploadFiles = (ev, afterUpload, addUpload, userId) => {
   ev.preventDefault()
   const files = ev.target[0].files
+  const fileList = []
   for (let i = 0; i < files.length; i++) {
-    const uploadElement = { name: files[i].name }
-    upload(files[i], userId).then(e => {
-      uploadElement.upload = true
-      afterUpload(e)
-    })
-    addUpload(uploadElement)
+    fileList.push(files[i])
+  }
+  const uploadThread = async () => {
+    for (let file = fileList.pop(); file; file = fileList.pop()) {
+      const uploadElement = { name: file.name }
+      addUpload(uploadElement)
+      await upload(file, userId).then(e => {
+        uploadElement.upload = true
+        afterUpload(e)
+      })
+    }
+  }
+  for (let i = 0; i < Math.min(files.length, 4); i++) {
+    uploadThread()
   }
   ev.target.reset()
 }
