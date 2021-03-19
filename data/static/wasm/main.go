@@ -1,5 +1,3 @@
-// +build js,wasm
-
 package main
 
 import (
@@ -28,14 +26,14 @@ func main() {
 }
 
 func jsSign(this js.Value, args []js.Value) interface{} {
-	rng := rand.Reader
 	input := args[0].String()
 
 	rsaPrivateKey := getRsaKey()
 	hashed := sha256.Sum256([]byte(input))
-	signature, _ := rsa.SignPKCS1v15(rng, rsaPrivateKey, crypto.SHA256, hashed[:])
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, rsaPrivateKey, crypto.SHA256, hashed[:])
 	return base64.StdEncoding.EncodeToString(signature)
 }
+
 func jsCreateKey(this js.Value, args []js.Value) interface{} {
 	getRsaKey()
 	return nil
@@ -65,6 +63,7 @@ func decryptAES(input js.Value, password string) string {
 	plain, _ := aesGCM.Open(nil, nonce, ciphertext, nil)
 	return string(plain)
 }
+
 func encryptAES(secretMessage string, password string) map[string]interface{} {
 	nonce := make([]byte, 12)
 	rand.Read(nonce)
@@ -77,20 +76,16 @@ func encryptAES(secretMessage string, password string) map[string]interface{} {
 	block, _ := aes.NewCipher(aesKey)
 	aesGCM, _ := cipher.NewGCM(block)
 	ciphertext := aesGCM.Seal(nil, nonce, []byte(secretMessage), nil)
-	result := make(map[string]interface{})
 
-	result["data"] = base64.StdEncoding.EncodeToString(ciphertext)
-	result["nonce"] = base64.StdEncoding.EncodeToString(nonce)
-	result["salt"] = base64.StdEncoding.EncodeToString(salt)
-
-	return result
+	return map[string]interface{}{
+		"data":  base64.StdEncoding.EncodeToString(ciphertext),
+		"nonce": base64.StdEncoding.EncodeToString(nonce),
+		"salt":  base64.StdEncoding.EncodeToString(salt),
+	}
 }
 
 func encryptData(secretMessage []byte) map[string]interface{} {
-	rng := rand.Reader
-	label := []byte("orders")
 	rsaKey := getRsaKey()
-
 	aesKey := make([]byte, 16)
 	nonce := make([]byte, 12)
 	rand.Read(aesKey)
@@ -99,13 +94,13 @@ func encryptData(secretMessage []byte) map[string]interface{} {
 	aesGCM, _ := cipher.NewGCM(block)
 	ciphertext := aesGCM.Seal(nil, nonce, secretMessage, nil)
 
-	ciphertextKey, _ := rsa.EncryptOAEP(sha256.New(), rng, &rsaKey.PublicKey, aesKey, label)
-	result := make(map[string]interface{})
-	result["data"] = base64.StdEncoding.EncodeToString(ciphertext)
-	result["key"] = base64.StdEncoding.EncodeToString(ciphertextKey)
-	result["nonce"] = base64.StdEncoding.EncodeToString(nonce)
+	ciphertextKey, _ := rsa.EncryptOAEP(sha256.New(), rand.Reader, &rsaKey.PublicKey, aesKey, []byte{})
 
-	return result
+	return map[string]interface{}{
+		"data":  base64.StdEncoding.EncodeToString(ciphertext),
+		"key":   base64.StdEncoding.EncodeToString(ciphertextKey),
+		"nonce": base64.StdEncoding.EncodeToString(nonce),
+	}
 }
 
 func jsEncryptString(this js.Value, args []js.Value) interface{} {
@@ -122,13 +117,11 @@ func jsEncrypt(this js.Value, args []js.Value) interface{} {
 }
 
 func decrypt(input js.Value) []byte {
-	rng := rand.Reader
-	label := []byte("orders")
 	ciphertext, _ := base64.StdEncoding.DecodeString(input.Get("data").String())
 	ciphertextKey, _ := base64.StdEncoding.DecodeString(input.Get("key").String())
 	nonce, _ := base64.StdEncoding.DecodeString(input.Get("nonce").String())
 	rsaKey := getRsaKey()
-	aesKey, err := rsa.DecryptOAEP(sha256.New(), rng, rsaKey, ciphertextKey, label)
+	aesKey, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, ciphertextKey, []byte{})
 	if err != nil {
 		return nil
 	}
@@ -168,11 +161,6 @@ func getRsaKey() *rsa.PrivateKey {
 		store("pk", pkBase64)
 		return rsaKey
 	}
-}
-
-func newKey() []byte {
-	key, _ := rsa.GenerateKey(rand.Reader, 2048)
-	return x509.MarshalPKCS1PrivateKey(key)
 }
 
 func store(key string, val string) {
