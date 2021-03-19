@@ -77,7 +77,15 @@ const createThumbnail = (id, file) => {
       canvas.height = 150
       const ctx = canvas.getContext('2d')
       image.addEventListener('load', () => {
-        ctx.drawImage(image, 0, 0, 300, 150)
+        const iw = image.width
+        const ih = image.height
+        if (ih * 2 > iw) {
+          const h = 300 * ih / iw
+          ctx.drawImage(image, 0, -(h - 150) / 4, 300, h)
+        } else {
+          const w = 150 * iw / ih
+          ctx.drawImage(image, -(w - 300) / 2, 0, w, 150)
+        }
         const thumbnail = encryptString(canvas.toDataURL('image/jpeg', 0.2))
         const body = JSON.stringify(thumbnail)
         const sign = signFile(body)
