@@ -13,7 +13,7 @@ function Grid (props) {
     children = [children]
   }
   const body = children.map((c) => h('div', null, c))
-  return h('div', { className: 'content-grid' }, body)
+  return h('div', { className: props.className || 'content-grid' }, body)
 }
 
 export { Grid }

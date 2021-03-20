@@ -67,6 +67,13 @@ body::-webkit-scrollbar {
 	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
+.folder-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	font-size: 80%;
+	overflow: hidden;
+}
+
 .content-board {
 	margin: 16px;
 	box-shadow: 1px 2px 2px #AAAAAA;

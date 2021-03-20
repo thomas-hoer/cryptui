@@ -181,7 +181,7 @@ function Folder () {
         )
       )
     ),
-    h(Grid, null,
+    h(Grid, { className: 'folder-grid' },
       folders
         .filter((f) => f.includes('/'))
         .map((f) => h('a', {
@@ -189,7 +189,7 @@ function Folder () {
           className: 'folder'
         }, f.replace('/', '')))
     ),
-    h(Grid, null,
+    h(Grid, { className: 'folder-grid' },
       files.map((f) => h(ImageComp, { file: f }))
     ),
     uploadList.length === 0

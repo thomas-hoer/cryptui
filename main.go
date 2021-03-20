@@ -87,7 +87,7 @@ type storageHandler struct {
 func (handler *storageHandler) init() {
 	// index is the most important part of the website. If it is not present
 	// the application should not start. Also it makes sense to cache the data
-	// since it is the most aquired resource of your website.
+	// since it is the most acquired resource of your website.
 	if index, err := os.ReadFile(handler.static + "/index.html"); err == nil {
 		handler.index = index
 	} else {
