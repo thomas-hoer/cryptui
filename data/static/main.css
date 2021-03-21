@@ -21,6 +21,10 @@ body::-webkit-scrollbar {
 }
 
 .header {
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	right: 0px;
 	z-index: 1;
 	align-items: center;
 	width: 100%;
@@ -29,7 +33,7 @@ body::-webkit-scrollbar {
 	background-color: #37474f;
 	color: #FFF;
 	font-size: 20px;
-	min-height: 48px;
+	height: 48px;
 	box-shadow: 0px 0px 2px #AAAAAA;
 }
 
@@ -53,6 +57,7 @@ body::-webkit-scrollbar {
 }
 
 .body {
+	margin-top: 48px;
 	flex: 1;
 	display: flex;
 	height: 100%;
@@ -71,6 +76,9 @@ body::-webkit-scrollbar {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 	font-size: 80%;
+}
+
+.folder-grid div{
 	overflow: hidden;
 }
 

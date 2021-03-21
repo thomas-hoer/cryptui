@@ -11,16 +11,18 @@ import { Folder } from '/component/folder.js'
  * @return {object} vdom of the page
  */
 function Page () {
+  const [menu, setMenu] = useState()
   const [user, setUser] = useState({})
   useEffect(() => {
     fetch('data.json').then((res) => res.json()).then(setUser)
   }, [true])
   const layoutOptions = {
     backButton: true,
-    title: user.name
+    title: user.name,
+    menu: menu
   }
   return h(Layout, layoutOptions,
-    h(Folder)
+    h(Folder, { setMenu: setMenu })
   )
 }
 export { Page }

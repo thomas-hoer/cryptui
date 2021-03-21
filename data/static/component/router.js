@@ -28,7 +28,7 @@ function Router () {
         if (target.tagName === 'A' && target.noRouter !== true) {
           const href = target.getAttribute('href')
           const hrefTarget = target.getAttribute('target')
-          if (!event.ctrlKey && !hrefTarget) {
+          if (!e.ctrlKey && !hrefTarget) {
             e.preventDefault()
             window.history.pushState(null, null, href)
             setPathname(window.location.pathname)

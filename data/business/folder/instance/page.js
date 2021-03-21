@@ -1,5 +1,6 @@
 'use strict'
 import { h } from '/js/preact.js'
+import { useState } from '/js/hooks.js'
 import { Layout } from '/component/layout.js'
 import { Folder } from '/component/folder.js'
 
@@ -9,13 +10,15 @@ import { Folder } from '/component/folder.js'
  * @return {object} vdom of the page
  */
 function Page () {
+  const [menu, setMenu] = useState()
   const splits = window.location.pathname.split('/')
   const layoutOptions = {
     backButton: true,
-    title: splits[splits.length - 2]
+    title: splits[splits.length - 2],
+    menu: menu
   }
   return h(Layout, layoutOptions,
-    h(Folder)
+    h(Folder, { setMenu: setMenu })
   )
 }
 export { Page }

@@ -103,9 +103,10 @@ const createThumbnail = (id, file) => {
  * Creates a component that lists all files in the current directory relative
  * to the window state.
  *
+ * @param {*} props
  * @return {object} vdom of the component
  */
-function Folder () {
+function Folder (props) {
   const userId = localStorage.getItem('userId')
   const filesRef = useRef([])
   const knownFiles = filesRef.current
@@ -114,6 +115,7 @@ function Folder () {
   const [folders, setFolders] = useState([])
   const uploadListRef = useRef([])
   const [uploadList, setUploadList] = useState([])
+  const [selected, setSelected] = useState({})
   useEffect(() => {
     fetch('files').then((res) => res.json()).then((res) => {
       const json = decryptToString(res)
@@ -162,6 +164,30 @@ function Folder () {
       setNewFolderName('')
     })
   }
+  const menu = [{
+    icon: '/assets/delete.png',
+    action: () => {
+      filesRef.current = filesRef.current.filter((f, i) => !selected[i])
+      const enc = encryptString(JSON.stringify(filesRef.current))
+      const body = JSON.stringify(enc)
+      const sign = signFile(body)
+      fetch('files', {
+        method: 'PUT',
+        body: body,
+        headers: { signature: sign }
+      })
+      setFiles([...filesRef.current])
+      props.setMenu(undefined)
+      setSelected({})
+    }
+  },
+  {
+    icon: '/assets/abort.png',
+    action: () => {
+      props.setMenu(undefined)
+      setSelected({})
+    }
+  }]
   return h(Fragment, null,
     h(Grid, null,
       h(Board, { title: 'Upload' },
@@ -190,7 +216,24 @@ function Folder () {
         }, f.replace('/', '')))
     ),
     h(Grid, { className: 'folder-grid' },
-      files.map((f) => h(ImageComp, { file: f }))
+      files.map((f, i) => h(ImageComp, {
+        key: f.name,
+        file: f,
+        select: () => {
+          if (selected[i]) {
+            delete selected[i]
+            if (Object.keys(selected).length === 0) {
+              props.setMenu(undefined)
+            }
+          } else {
+            selected[i] = true
+            props.setMenu(menu)
+          }
+          setSelected({ ...selected })
+        },
+        isSelected: selected[i],
+        isSelection: Object.keys(selected).length !== 0
+      }))
     ),
     uploadList.length === 0
       ? null
@@ -219,9 +262,22 @@ function ImageComp (props) {
         .then((res) => setSrc(decryptToString(res)))
     }
   }, [true])
-  return h('div', { onClick: () => download(props.file), className: 'file' },
-    src && h('img', { src: src }),
-    props.file.name
+  const selectElement = e => {
+    e.preventDefault()
+    props.select()
+  }
+  let style = {}
+  if (props.isSelected) {
+    style = { backgroundColor: '#d1ecf7' }
+  }
+  return h('div', {
+    style: style,
+    onClick: props.isSelection ? selectElement : () => download(props.file),
+    oncontextmenu: selectElement,
+    className: 'file'
+  },
+  src && h('img', { src: src }),
+  props.file.name
   )
 }
 export { Folder }
