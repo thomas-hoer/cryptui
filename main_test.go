@@ -221,7 +221,7 @@ var serveHTTPGetTests = []struct {
 const privateKey = "MIIBOgIBAAJBAOOK4kUijqVb9zm7riuF126Zm+111AF3YpepnF6CUTdp7HY9jVdvmYZaw8lsdk3JjmvK7EiTr+I0pzeBivuZBacCAwEAAQJBAJaEUJka+vE3nJp8JAJ2TsPCqPqzbsJpjrZ0ZBPAcKkOESNI3XGwXn5m+M1FBLQ7HQIw8QIAbZScR67HUL/GIoECIQDzb0CjtHGECZLLhstybf79ww9EDf8pyWRWZGT1drrRSQIhAO9Joihzz70/hjb4tZnDWmg8kBT17iSPtXUWe8cgrQ9vAiBpHZIQ3lriA+xCPCtfdwXTd8YAwfZ7ib3s3B8IK0OSGQIgVxaJegeMV+hCxMcH8Qp0YPOJzNck8RGMjSy9p99wnOkCIBuNZ0yYrlf+TZ2tP/fujdoDqmRwAa8xEdk354dAJ7dM"
 const publicKey = "MEgCQQDjiuJFIo6lW/c5u64rhddumZvtddQBd2KXqZxeglE3aex2PY1Xb5mGWsPJbHZNyY5ryuxIk6/iNKc3gYr7mQWnAgMBAAE="
 
-var nextId int
+var nextID int
 
 func signData(data string) string {
 	b64 := base64.StdEncoding
@@ -476,8 +476,8 @@ func TestStorageHandlerServeHTTP(t *testing.T) {
 		business: "data/business",
 		user:     dir,
 		idGenerator: func(contentType string) string {
-			nextId += 1
-			return strconv.Itoa(nextId)
+			nextID++
+			return strconv.Itoa(nextID)
 		},
 	}
 	userDir := dir + pathSeparator + "user" + pathSeparator + "1"

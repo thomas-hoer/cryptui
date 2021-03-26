@@ -22,6 +22,11 @@ import (
 const logRequests bool = true
 const contentType = "Content-Type"
 
+type Handler interface {
+	http.Handler
+	getStatic() string
+}
+
 func main() {
 	sh := &storageHandler{
 		static:   "data/static",
@@ -84,6 +89,9 @@ type storageHandler struct {
 	idGenerator func(string) string
 }
 
+func (handler *storageHandler) getStatic() string {
+	return handler.static
+}
 func (handler *storageHandler) init() {
 	// index is the most important part of the website. If it is not present
 	// the application should not start. Also it makes sense to cache the data
@@ -134,8 +142,8 @@ func (handler *storageHandler) handleGetUser(resp http.ResponseWriter, requestUR
 			handler.handleGetIndex(resp, handler.user, requestURI, queryParam)
 		}
 	} else {
-		if dat, err := os.ReadFile(filename); err == nil {
-			resp.Write(dat)
+		if dat, err := os.Open(filename); err == nil {
+			io.Copy(resp, dat)
 		} else {
 			log.Print(err.Error())
 			resp.WriteHeader(http.StatusNotFound)
@@ -189,8 +197,8 @@ func (handler *storageHandler) handleGetType(resp http.ResponseWriter, requestUR
 }
 func (handler *storageHandler) handleGetStatic(resp http.ResponseWriter, requestURI, queryParam string) {
 	if fileInfo, err := os.Stat(handler.static + requestURI); err == nil && !fileInfo.IsDir() {
-		if dat, err := os.ReadFile(handler.static + requestURI); err == nil {
-			resp.Write(dat)
+		if dat, err := os.Open(handler.static + requestURI); err == nil {
+			io.Copy(resp, dat)
 			return
 		}
 	}
@@ -203,8 +211,8 @@ func (handler *storageHandler) handleGetBusiness(resp http.ResponseWriter, reque
 		if fileInfo.IsDir() {
 			handler.handleGetIndex(resp, handler.business, requestURI, queryParam)
 			return
-		} else if dat, err := os.ReadFile(handler.business + requestURI); err == nil {
-			resp.Write(dat)
+		} else if dat, err := os.Open(handler.business + requestURI); err == nil {
+			io.Copy(resp, dat)
 			return
 		}
 	}

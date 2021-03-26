@@ -5,10 +5,12 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 )
 
 type handler struct {
+	storageHandler
 	statusCode int
 	data       []byte
 }
@@ -58,8 +60,17 @@ var gzipperTests = []struct {
 }
 
 func TestGzipper(t *testing.T) {
+	dir, err := os.MkdirTemp("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir) // clean up
+
 	for i, e := range gzipperTests {
 		h := gzipper(&handler{
+			storageHandler: storageHandler{
+				static: dir,
+			},
 			statusCode: http.StatusOK,
 			data:       e.data,
 		})
