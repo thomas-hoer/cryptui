@@ -23,7 +23,6 @@ function Router () {
   }
   useEffect(() => {
     const interceptClickEvent = function (e) {
-      // var target = e.target || e.srcElement;
       for (const target of e.path) {
         if (target.tagName === 'A' && target.noRouter !== true) {
           const href = target.getAttribute('href')

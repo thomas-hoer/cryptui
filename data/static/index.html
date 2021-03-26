@@ -18,13 +18,13 @@
   import { Page } from './page.js';
   import { Router } from '/component/router.js';
   import { h, render } from '/js/preact.js';
-  // Use 'Router' for Single-Page-Application or 'Page' for development
   const go = new Go()
   WebAssembly.instantiateStreaming(
    fetch('/wasm/main.wasm'),
     go.importObject
    ).then(result => {
     go.run(result.instance)
+    // Use 'Router' for Single-Page-Application or 'Page' for development
     render(h(Router), document.querySelector('#content'));
   })
   </script>

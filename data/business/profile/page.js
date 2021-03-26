@@ -73,7 +73,7 @@ function Page () {
             type: 'password',
             placeholder: 'Password',
             value: password,
-            onChange: (ev) => setPassword(ev.target.value)
+            onInput: (ev) => setPassword(ev.target.value)
           }),
           h('br'),
           h('input', {
@@ -88,7 +88,7 @@ function Page () {
             type: 'password',
             placeholder: 'Password',
             value: password,
-            onChange: (ev) => setPassword(ev.target.value)
+            onInput: (ev) => setPassword(ev.target.value)
           }),
           h('br'),
           h('input', {

@@ -201,7 +201,7 @@ function Folder (props) {
           h('input', {
             type: 'text',
             value: newFolderName,
-            onChange: (ev) => setNewFolderName(ev.target.value)
+            onInput: (ev) => setNewFolderName(ev.target.value)
           }),
           h('input', { type: 'submit' })
         )
