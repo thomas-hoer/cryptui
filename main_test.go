@@ -201,7 +201,7 @@ var serveHTTPGetTests = []struct {
 	{"", 301, "", "/", []byte("")},
 	{"/", 0, "text/html", "", readFile("data/static/index.html")},
 	{"/js/preact.js", 0, "", "", readFile("data/static/js/preact.js")},
-	{"/?json", 0, "application/json", "", []byte(`["profile/","user/"]`)},
+	{"/?json", 0, "application/json", "", []byte(`["files/","profile/","user/"]`)},
 	{"/user/1/page.js", 303, "", "/user/instance/page.js", []byte("")},
 	{"/user/1/type", 0, "", "", []byte("user/instance")},
 	{"/user/files", 303, "", "/users/files", []byte("")},
@@ -463,6 +463,53 @@ var serveHTTPPostTests = []struct {
 		"",
 		"",
 	},
+	{ //#19
+		"GET",
+		"/user/4/",
+		[]byte("{}"),
+		map[string][]string{},
+		http.StatusNotFound,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#20
+		"POST",
+		"/user/",
+		nil,
+		map[string][]string{
+			"Content-Type": {"application/user.instance"},
+		},
+		http.StatusBadRequest,
+		[]byte(""),
+		"",
+		"",
+	},
+	{ //#21
+		"POST",
+		"/files/",
+		[]byte(`{"name":"b","key":"AAAA"}`),
+		map[string][]string{
+			"Content-Type": {"application/file.instance"},
+			"User-Id":      {"2"},
+		},
+		http.StatusCreated,
+		[]byte(""),
+		"4",
+		"/files/4/",
+	},
+}
+
+var serveHTTPTestsFileAsserts = []struct {
+	path     string
+	expected string
+}{
+	{"/files/4/user", "2"},
+	{"/files/4/type", "file/instance"},
+	{"/files/4/data.json", `{"name":"b","key":"AAAA"}`},
+	{"/user/1/files", "{}"},
+	{"/user/1/data.json", `{"name":"a","key":"` + publicKey + `"}`},
+	{"/user/1/type", "user/instance"},
 }
 
 func TestStorageHandlerServeHTTP(t *testing.T) {
@@ -481,8 +528,10 @@ func TestStorageHandlerServeHTTP(t *testing.T) {
 		},
 	}
 	userDir := dir + pathSeparator + "user" + pathSeparator + "1"
+	filesDir := dir + pathSeparator + "files"
 	profileDir := dir + pathSeparator + "profile"
 	os.MkdirAll(userDir, os.ModePerm)
+	os.MkdirAll(filesDir, os.ModePerm)
 	os.MkdirAll(profileDir, os.ModePerm)
 	os.WriteFile(userDir+pathSeparator+"type", []byte("user/instance"), os.ModePerm)
 	os.WriteFile(dir+pathSeparator+"user"+pathSeparator+"type", []byte("users"), os.ModePerm)
@@ -538,5 +587,20 @@ func TestStorageHandlerServeHTTP(t *testing.T) {
 		if headerLocation := resp.header.Get("Location"); headerLocation != e.location {
 			t.Errorf("storageHandler.ServeHTTP()#%d resp.header['Location']: expected: %s, actual: %s", i, e.location, headerLocation)
 		}
+	}
+	for i, e := range serveHTTPTestsFileAsserts {
+		dat, err := os.ReadFile(dir + e.path)
+		if err != nil {
+			t.Errorf("storageHandler.ServeHTTP()#%d readFile: expected: no error, actual: %s", i, err)
+		} else {
+			str := string(dat)
+			if str != e.expected {
+				t.Errorf("storageHandler.ServeHTTP()#%d readFile: expected: %s, actual: %s", i, e.expected, str)
+			}
+		}
+	}
+	err = os.RemoveAll(dir)
+	if err != nil {
+		t.Errorf("storageHandler.ServeHTTP() cleanup: expected: no error, actual: %s", err)
 	}
 }

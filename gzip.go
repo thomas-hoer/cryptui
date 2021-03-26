@@ -21,7 +21,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 }
 func gzipper(handler Handler) http.Handler {
 	cache := make(map[string][]byte)
-	static := handler.getStatic()
+	static := strings.ReplaceAll(handler.getStatic(), `\`, "/")
 	filepath.WalkDir(static, func(path string, info fs.DirEntry, err error) error {
 		if info.IsDir() {
 			return nil

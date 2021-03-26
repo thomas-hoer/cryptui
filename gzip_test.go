@@ -105,3 +105,56 @@ func TestGzipper(t *testing.T) {
 		}
 	}
 }
+
+var gzipperCacheTests = []struct {
+	requestURI     string
+	acceptEncoding []string
+	data           []byte
+	expected       []byte
+}{
+	{
+		"/test",
+		[]string{"gzip"},
+		[]byte("This comes from cache"),
+		resp1,
+	},
+	{
+		"/test",
+		[]string{},
+		[]byte("This comes from cache"),
+		[]byte("This comes from cache"),
+	},
+}
+
+func TestGzipperCache(t *testing.T) {
+	dir, err := os.MkdirTemp("", "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir) // clean up
+	os.WriteFile(dir+string(os.PathSeparator)+"test", []byte("This is a response"), os.ModePerm)
+
+	for i, e := range gzipperCacheTests {
+		h := gzipper(&handler{
+			storageHandler: storageHandler{
+				static: dir,
+			},
+			statusCode: http.StatusOK,
+			data:       e.data,
+		})
+		resp := &mockResponseWriter{
+			header: make(map[string][]string),
+		}
+		req := &http.Request{
+			RequestURI: e.requestURI,
+			Header: map[string][]string{
+				"Accept-Encoding": e.acceptEncoding,
+			},
+		}
+		h.ServeHTTP(resp, req)
+		expected := e.expected
+		if !bytes.Equal(resp.body, expected) {
+			t.Errorf("gzipper()#%d resp.body: expected: %ds, actual: %ds", i, expected, resp.body)
+		}
+	}
+}

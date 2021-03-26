@@ -143,6 +143,7 @@ func (handler *storageHandler) handleGetUser(resp http.ResponseWriter, requestUR
 		}
 	} else {
 		if dat, err := os.Open(filename); err == nil {
+			defer dat.Close()
 			io.Copy(resp, dat)
 		} else {
 			log.Print(err.Error())
@@ -198,6 +199,7 @@ func (handler *storageHandler) handleGetType(resp http.ResponseWriter, requestUR
 func (handler *storageHandler) handleGetStatic(resp http.ResponseWriter, requestURI, queryParam string) {
 	if fileInfo, err := os.Stat(handler.static + requestURI); err == nil && !fileInfo.IsDir() {
 		if dat, err := os.Open(handler.static + requestURI); err == nil {
+			defer dat.Close()
 			io.Copy(resp, dat)
 			return
 		}
@@ -212,6 +214,7 @@ func (handler *storageHandler) handleGetBusiness(resp http.ResponseWriter, reque
 			handler.handleGetIndex(resp, handler.business, requestURI, queryParam)
 			return
 		} else if dat, err := os.Open(handler.business + requestURI); err == nil {
+			defer dat.Close()
 			io.Copy(resp, dat)
 			return
 		}
