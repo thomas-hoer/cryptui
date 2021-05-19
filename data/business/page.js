@@ -1,9 +1,7 @@
 'use strict'
 import { h } from '/js/preact.js'
 import { useState, useEffect } from '/js/hooks.js'
-import { Layout } from '/component/layout.js'
-import { Board } from '/component/board.js'
-import { Grid } from '/component/grid.js'
+import { Layout, Board, Grid } from '/component/components.js'
 import { createKey } from '/component/wasm.js'
 /**
  * Creates the homepage for the cryptui project.
@@ -73,6 +71,7 @@ function About () {
     h('p', null, 'Goal of this project is to provide a platform independent file host, where all of your files are getting encrpyted right before you upload it. It aim to be as easy to use as other well known file hoster.'),
     h('p', null, 'The project is open source, so you can easily set up your own file hosting server.'),
     h('a', {
+      rel: 'noopener',
       href: 'https://github.com/thomas-hoer/cryptui',
       target: '_blank'
     }, 'Visit us on Github')

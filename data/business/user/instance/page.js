@@ -1,7 +1,7 @@
 'use strict'
 import { h } from '/js/preact.js'
 import { useState, useEffect } from '/js/hooks.js'
-import { Layout } from '/component/layout.js'
+import { Layout } from '/component/components.js'
 import { Folder } from '/component/folder.js'
 
 /**

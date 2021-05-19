@@ -1,8 +1,7 @@
 'use strict'
 import { h, Fragment } from '/js/preact.js'
 import { useState, useEffect, useRef } from '/js/hooks.js'
-import { Board } from '/component/board.js'
-import { Grid } from '/component/grid.js'
+import { Board, Grid } from '/component/components.js'
 import { decryptToString, decryptToBase64, encrypt, encryptString } from '/component/wasm.js'
 
 const download = (f) => {

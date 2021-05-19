@@ -1,9 +1,7 @@
 'use strict'
 import { h } from '/js/preact.js'
 import { useState, useEffect } from '/js/hooks.js'
-import { Layout } from '/component/layout.js'
-import { Board } from '/component/board.js'
-import { Grid } from '/component/grid.js'
+import { Layout, Board, Grid } from '/component/components.js'
 
 /**
  * Creates a page for profile and settings.
