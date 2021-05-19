@@ -14,11 +14,11 @@ import (
 
 func main() {
 	c := make(chan bool)
-	js.Global().Set("decryptToString", js.FuncOf(jsDecryptToString))
-	js.Global().Set("decryptToBase64", js.FuncOf(jsDecryptToBase64))
-	js.Global().Set("encryptString", js.FuncOf(jsEncryptString))
-	js.Global().Set("encrypt", js.FuncOf(jsEncrypt))
-	js.Global().Set("createKey", js.FuncOf(jsCreateKey))
+	js.Global().Set("wasmDecryptToString", js.FuncOf(jsDecryptToString))
+	js.Global().Set("wasmDecryptToBase64", js.FuncOf(jsDecryptToBase64))
+	js.Global().Set("wasmEncryptString", js.FuncOf(jsEncryptString))
+	js.Global().Set("wasmEncrypt", js.FuncOf(jsEncrypt))
+	js.Global().Set("wasmCreateKey", js.FuncOf(jsCreateKey))
 	js.Global().Set("encryptAES", js.FuncOf(jsEncryptAES))
 	js.Global().Set("decryptAES", js.FuncOf(jsDecryptAES))
 	js.Global().Set("signFile", js.FuncOf(jsSign))
@@ -151,16 +151,15 @@ func getRsaKey() *rsa.PrivateKey {
 		data, _ := base64.StdEncoding.DecodeString(*key)
 		pk, _ := x509.ParsePKCS1PrivateKey(data)
 		return pk
-	} else {
-		rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-		pkData := x509.MarshalPKCS1PrivateKey(rsaKey)
-		pkBase64 := base64.StdEncoding.EncodeToString(pkData)
-		pubData := x509.MarshalPKCS1PublicKey(&rsaKey.PublicKey)
-		pubBase64 := base64.StdEncoding.EncodeToString(pubData)
-		store("pub", pubBase64)
-		store("pk", pkBase64)
-		return rsaKey
 	}
+	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pkData := x509.MarshalPKCS1PrivateKey(rsaKey)
+	pkBase64 := base64.StdEncoding.EncodeToString(pkData)
+	pubData := x509.MarshalPKCS1PublicKey(&rsaKey.PublicKey)
+	pubBase64 := base64.StdEncoding.EncodeToString(pubData)
+	store("pub", pubBase64)
+	store("pk", pkBase64)
+	return rsaKey
 }
 
 func store(key string, val string) {

@@ -11,22 +11,12 @@
  <body>
   <div id="content"></div>
 
-
   <script src="/js/wasm_exec.min.js"></script>
   <script type="module">
   'use strict';
-  import { Page } from './page.js';
   import { Router } from '/component/router.js';
   import { h, render } from '/js/preact.js';
-  const go = new Go()
-  WebAssembly.instantiateStreaming(
-   fetch('/wasm/main.wasm'),
-    go.importObject
-   ).then(result => {
-    go.run(result.instance)
-    // Use 'Router' for Single-Page-Application or 'Page' for development
-    render(h(Router), document.querySelector('#content'));
-  })
+  render(h(Router), document.querySelector('#content'));
   </script>
  </body>
 </html>

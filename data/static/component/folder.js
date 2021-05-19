@@ -3,10 +3,10 @@ import { h, Fragment } from '/js/preact.js'
 import { useState, useEffect, useRef } from '/js/hooks.js'
 import { Board } from '/component/board.js'
 import { Grid } from '/component/grid.js'
+import { decryptToString, decryptToBase64, encrypt, encryptString } from '/component/wasm.js'
 
 const download = (f) => {
-  fetch('/files/' + f.id + '/data.json').then((res) => res.json()).then((res) => {
-    const str = decryptToBase64(res)
+  fetch('/files/' + f.id + '/data.json').then((res) => res.json()).then(decryptToBase64).then(str => {
     const a = document.createElement('a')
     a.noRouter = true // needed for router.js
     a.href = 'data:octet/stream;base64,' + str
@@ -27,19 +27,21 @@ const toBlob = (file) => {
 const upload = async (file, userId) => {
   const result = await toBlob(file)
   const int8Array = new Uint8Array(result)
-  const enc = encrypt(int8Array)
-  const body = JSON.stringify(enc)
-  return fetch('/files/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/file.instance',
-      'User-Id': userId,
-      signature: signFile(body)
-    },
-    body: body
-  }).then((res) => {
-    return { id: res.headers.get('Id'), file: file }
+  return encrypt(int8Array).then(enc => {
+    const body = JSON.stringify(enc)
+    return fetch('/files/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/file.instance',
+        'User-Id': userId,
+        signature: signFile(body)
+      },
+      body: body
+    })
   })
+    .then((res) => {
+      return { id: res.headers.get('Id'), file: file }
+    })
 }
 
 const uploadFiles = (ev, afterUpload, addUpload, userId) => {
@@ -86,14 +88,15 @@ const createThumbnail = (id, file) => {
           const w = 150 * iw / ih
           ctx.drawImage(image, -(w - 300) / 2, 0, w, 150)
         }
-        const thumbnail = encryptString(canvas.toDataURL('image/jpeg', 0.2))
-        const body = JSON.stringify(thumbnail)
-        const sign = signFile(body)
-        fetch('/files/' + id + '/thumb.json', {
-          method: 'PUT',
-          body: body,
-          headers: { signature: sign }
-        }).then(resolve)
+        encryptString(canvas.toDataURL('image/jpeg', 0.2)).then(thumbnail => {
+          const body = JSON.stringify(thumbnail)
+          const sign = signFile(body)
+          fetch('/files/' + id + '/thumb.json', {
+            method: 'PUT',
+            body: body,
+            headers: { signature: sign }
+          }).then(resolve)
+        })
       })
     }
   })
@@ -117,8 +120,7 @@ function Folder (props) {
   const [uploadList, setUploadList] = useState([])
   const [selected, setSelected] = useState({})
   useEffect(() => {
-    fetch('files').then((res) => res.json()).then((res) => {
-      const json = decryptToString(res)
+    fetch('files').then((res) => res.json()).then(decryptToString).then(json => {
       knownFiles.push(...JSON.parse(json))
       setFiles([...knownFiles])
     })
@@ -135,15 +137,16 @@ function Folder (props) {
   }
   const addFile = f => {
     knownFiles.push(f)
-    const enc = encryptString(JSON.stringify(knownFiles))
-    const body = JSON.stringify(enc)
-    const sign = signFile(body)
-    fetch('files', {
-      method: 'PUT',
-      body: body,
-      headers: { signature: sign }
+    encryptString(JSON.stringify(knownFiles)).then(enc => {
+      const body = JSON.stringify(enc)
+      const sign = signFile(body)
+      fetch('files', {
+        method: 'PUT',
+        body: body,
+        headers: { signature: sign }
+      })
+      setFiles([...knownFiles])
     })
-    setFiles([...knownFiles])
   }
   const afterUpload = ({ id, file }) => {
     if (file.type.substring(0, 5) === 'image') {
@@ -166,9 +169,9 @@ function Folder (props) {
   }
   const menu = [{
     icon: '/assets/delete.png',
-    action: () => {
+    action: async () => {
       filesRef.current = filesRef.current.filter((f, i) => !selected[i])
-      const enc = encryptString(JSON.stringify(filesRef.current))
+      const enc = await encryptString(JSON.stringify(filesRef.current))
       const body = JSON.stringify(enc)
       const sign = signFile(body)
       fetch('files', {
@@ -258,8 +261,9 @@ function ImageComp (props) {
   useEffect(() => {
     if (props.file.thumb) {
       fetch('/files/' + props.file.id + '/thumb.json')
-        .then((res) => res.json())
-        .then((res) => setSrc(decryptToString(res)))
+        .then(res => res.json())
+        .then(decryptToString)
+        .then(setSrc)
     }
   }, [true])
   const selectElement = e => {

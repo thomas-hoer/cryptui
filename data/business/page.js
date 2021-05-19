@@ -4,7 +4,7 @@ import { useState, useEffect } from '/js/hooks.js'
 import { Layout } from '/component/layout.js'
 import { Board } from '/component/board.js'
 import { Grid } from '/component/grid.js'
-
+import { createKey } from '/component/wasm.js'
 /**
  * Creates the homepage for the cryptui project.
  *
@@ -53,7 +53,7 @@ function NewAccount () {
     h('input', {
       type: 'button',
       value: 'Create new Key',
-      onClick: async (e) => createKey()
+      onClick: createKey
     }),
     h('div', null, 'Name'),
     h('input', {
