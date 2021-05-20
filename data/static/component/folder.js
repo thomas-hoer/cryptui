@@ -2,7 +2,7 @@
 import { h, Fragment } from '/js/preact.js'
 import { useState, useEffect, useRef } from '/js/hooks.js'
 import { Board, Grid } from '/component/components.js'
-import { decryptToString, decryptToBase64, encrypt, encryptString } from '/component/wasm.js'
+import { decryptToString, decryptToBase64, encrypt, encryptString, signFile } from '/component/wasm.js'
 
 const download = (f) => {
   fetch('/files/' + f.id + '/data.json').then((res) => res.json()).then(decryptToBase64).then(str => {
@@ -28,15 +28,15 @@ const upload = async (file, userId) => {
   const int8Array = new Uint8Array(result)
   return encrypt(int8Array).then(enc => {
     const body = JSON.stringify(enc)
-    return fetch('/files/', {
+    return signFile(body).then(sign => fetch('/files/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/file.instance',
         'User-Id': userId,
-        signature: signFile(body)
+        signature: sign
       },
       body: body
-    })
+    }))
   })
     .then((res) => {
       return { id: res.headers.get('Id'), file: file }
@@ -89,12 +89,14 @@ const createThumbnail = (id, file) => {
         }
         encryptString(canvas.toDataURL('image/jpeg', 0.2)).then(thumbnail => {
           const body = JSON.stringify(thumbnail)
-          const sign = signFile(body)
-          fetch('/files/' + id + '/thumb.json', {
-            method: 'PUT',
-            body: body,
-            headers: { signature: sign }
-          }).then(resolve)
+          signFile(body)
+            .then(sign =>
+              fetch('/files/' + id + '/thumb.json', {
+                method: 'PUT',
+                body: body,
+                headers: { signature: sign }
+              }))
+            .then(resolve)
         })
       })
     }
@@ -138,12 +140,13 @@ function Folder (props) {
     knownFiles.push(f)
     encryptString(JSON.stringify(knownFiles)).then(enc => {
       const body = JSON.stringify(enc)
-      const sign = signFile(body)
-      fetch('files', {
-        method: 'PUT',
-        body: body,
-        headers: { signature: sign }
-      })
+      signFile(body)
+        .then(sign =>
+          fetch('files', {
+            method: 'PUT',
+            body: body,
+            headers: { signature: sign }
+          }))
       setFiles([...knownFiles])
     })
   }
@@ -155,12 +158,12 @@ function Folder (props) {
       addFile({ name: file.name, id: id })
     }
   }
-  const addFolder = ev => {
+  const addFolder = async ev => {
     ev.preventDefault()
     fetch(newFolderName + '/type', {
       method: 'PUT',
       body: 'folder/instance',
-      headers: { signature: signFile('folder/instance') }
+      headers: { signature: await signFile('folder/instance') }
     }).then(() => {
       setFolders([...folders, newFolderName + '/'])
       setNewFolderName('')
@@ -172,12 +175,12 @@ function Folder (props) {
       filesRef.current = filesRef.current.filter((f, i) => !selected[i])
       const enc = await encryptString(JSON.stringify(filesRef.current))
       const body = JSON.stringify(enc)
-      const sign = signFile(body)
-      fetch('files', {
-        method: 'PUT',
-        body: body,
-        headers: { signature: sign }
-      })
+      signFile(body)
+        .then(sign => fetch('files', {
+          method: 'PUT',
+          body: body,
+          headers: { signature: sign }
+        }))
       setFiles([...filesRef.current])
       props.setMenu(undefined)
       setSelected({})

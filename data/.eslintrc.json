@@ -19,9 +19,9 @@
         "wasmEncryptString": "readonly",
         "wasmEncrypt": "readonly",
         "wasmCreateKey": "readonly",
-        "encryptAES": "readonly",
-        "decryptAES": "readonly",
-        "signFile": "readonly",
+        "wasmEncryptAES": "readonly",
+        "wasmDecryptAES": "readonly",
+        "wasmSignFile": "readonly",
         "Go": "readonly"
     }
 }

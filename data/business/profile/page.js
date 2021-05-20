@@ -2,7 +2,7 @@
 import { h } from '/js/preact.js'
 import { useState, useEffect } from '/js/hooks.js'
 import { Layout, Board, Grid } from '/component/components.js'
-
+import { encryptAES, decryptAES } from '/component/wasm.js'
 /**
  * Creates a page for profile and settings.
  *
@@ -36,8 +36,8 @@ function Page () {
       pub: localStorage.getItem('pub'),
       userId: localStorage.getItem('userId')
     }
-    const encrypted = encryptAES(JSON.stringify(dat), password)
-    download(JSON.stringify(encrypted))
+    encryptAES(JSON.stringify(dat), password)
+      .then(encrypted => download(JSON.stringify(encrypted)))
   }
   const toText = (file) => {
     return new Promise((resolve, reject) => {
@@ -52,14 +52,15 @@ function Page () {
     ev.preventDefault()
     const json = await toText(ev.target[1].files[0])
     const data = JSON.parse(json)
-    const keyDataJson = decryptAES(data, password)
-    if (keyDataJson !== '') {
-      const keyData = JSON.parse(keyDataJson)
-      localStorage.setItem('pk', keyData.pk)
-      localStorage.setItem('pub', keyData.pub)
-      localStorage.setItem('userId', keyData.userId)
-      ev.target.reset()
-    }
+    decryptAES(data, password).then(keyDataJson => {
+      if (keyDataJson !== '') {
+        const keyData = JSON.parse(keyDataJson)
+        localStorage.setItem('pk', keyData.pk)
+        localStorage.setItem('pub', keyData.pub)
+        localStorage.setItem('userId', keyData.userId)
+        ev.target.reset()
+      }
+    })
   }
 
   return h(Layout, layoutOptions,

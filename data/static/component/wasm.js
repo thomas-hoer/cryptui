@@ -13,6 +13,9 @@ async function init () {
     functions.encryptString = wasmEncryptString
     functions.encrypt = wasmEncrypt
     functions.createKey = wasmCreateKey
+    functions.encryptAES = wasmEncryptAES
+    functions.decryptAES = wasmDecryptAES
+    functions.signFile = wasmSignFile
   })
 }
 
@@ -46,5 +49,22 @@ async function createKey () {
   }
   return init().then(functions.createKey)
 }
-
-export { decryptToString, decryptToBase64, encryptString, encrypt, createKey }
+async function encryptAES (input) {
+  if (functions.encryptAES) {
+    return functions.encryptAES(input)
+  }
+  return init().then(() => functions.encryptAES(input))
+}
+async function decryptAES (data, password) {
+  if (functions.encryptAES) {
+    return functions.encryptAES(data, password)
+  }
+  return init().then(() => functions.encryptAES(data, password))
+}
+async function signFile (input) {
+  if (functions.signFile) {
+    return functions.signFile(input)
+  }
+  return init().then(() => functions.signFile(input))
+}
+export { decryptToString, decryptToBase64, encryptString, encrypt, encryptAES, decryptAES, signFile, createKey }

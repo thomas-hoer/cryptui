@@ -19,9 +19,9 @@ func main() {
 	js.Global().Set("wasmEncryptString", js.FuncOf(jsEncryptString))
 	js.Global().Set("wasmEncrypt", js.FuncOf(jsEncrypt))
 	js.Global().Set("wasmCreateKey", js.FuncOf(jsCreateKey))
-	js.Global().Set("encryptAES", js.FuncOf(jsEncryptAES))
-	js.Global().Set("decryptAES", js.FuncOf(jsDecryptAES))
-	js.Global().Set("signFile", js.FuncOf(jsSign))
+	js.Global().Set("wasmEncryptAES", js.FuncOf(jsEncryptAES))
+	js.Global().Set("wasmDecryptAES", js.FuncOf(jsDecryptAES))
+	js.Global().Set("wasmSignFile", js.FuncOf(jsSign))
 	<-c
 }
 
