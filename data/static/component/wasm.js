@@ -2,12 +2,16 @@
 
 const functions = {}
 async function init () {
+  if (functions.init) {
+    return
+  }
   const go = new Go()
-  return WebAssembly.instantiateStreaming(
+  await WebAssembly.instantiateStreaming(
     fetch('/wasm/main.wasm'),
     go.importObject
   ).then(result => {
     go.run(result.instance)
+    functions.init = true
     functions.decryptToString = wasmDecryptToString
     functions.decryptToBase64 = wasmDecryptToBase64
     functions.encryptString = wasmEncryptString
@@ -20,51 +24,35 @@ async function init () {
 }
 
 async function decryptToString (input) {
-  if (functions.decryptToString) {
-    return functions.decryptToString(input)
-  }
-  return init().then(() => functions.decryptToString(input))
+  await init()
+  return functions.decryptToString(input)
 }
 async function decryptToBase64 (input) {
-  if (functions.decryptToBase64) {
-    return functions.decryptToBase64(input)
-  }
-  return init().then(() => functions.decryptToBase64(input))
+  await init()
+  return functions.decryptToBase64(input)
 }
 async function encryptString (input) {
-  if (functions.encryptString) {
-    return functions.encryptString(input)
-  }
-  return init().then(() => functions.encryptString(input))
+  await init()
+  return functions.encryptString(input)
 }
 async function encrypt (input) {
-  if (functions.encrypt) {
-    return functions.encrypt(input)
-  }
-  return init().then(() => functions.encrypt(input))
+  await init()
+  return functions.encrypt(input)
 }
 async function createKey () {
-  if (functions.createKey) {
-    return functions.createKey()
-  }
-  return init().then(functions.createKey)
+  await init()
+  return functions.createKey()
 }
 async function encryptAES (input) {
-  if (functions.encryptAES) {
-    return functions.encryptAES(input)
-  }
-  return init().then(() => functions.encryptAES(input))
+  await init()
+  return functions.encryptAES(input)
 }
 async function decryptAES (data, password) {
-  if (functions.encryptAES) {
-    return functions.encryptAES(data, password)
-  }
-  return init().then(() => functions.encryptAES(data, password))
+  await init()
+  return functions.encryptAES(data, password)
 }
 async function signFile (input) {
-  if (functions.signFile) {
-    return functions.signFile(input)
-  }
-  return init().then(() => functions.signFile(input))
+  await init()
+  return functions.signFile(input)
 }
 export { decryptToString, decryptToBase64, encryptString, encrypt, encryptAES, decryptAES, signFile, createKey }

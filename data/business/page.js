@@ -33,6 +33,8 @@ function Page () {
 
 function NewAccount () {
   const [username, setUsername] = useState('')
+  const [createKeyDisabled, setCreateKeyDisabled] = useState()
+  const [createKeyMsg, setCreateKeyMsg] = useState('')
   const createUser = () => {
     fetch('/user/', {
       method: 'POST',
@@ -50,9 +52,15 @@ function NewAccount () {
     h('p', null, 'First you need to create your brand new RSA Key-Pair. Then you need to share your Public Key so that we can identify you later on. In addition we want you to provide a sort of username, that can be combined with the public key. Last, we encourage you to store a copy of your private key on a secure place. At the moment it is only stored in the local storage of your browser. In case of lost of your private key, you can not access any of the uploaded files anymore. There is no recover mechanism.'),
     h('input', {
       type: 'button',
+      disabled: createKeyDisabled,
       value: 'Create new Key',
-      onClick: createKey
+      onClick: () => {
+        setCreateKeyDisabled(true)
+        setCreateKeyMsg('Generating')
+        createKey().then(() => setCreateKeyMsg('Finished'))
+      }
     }),
+    createKeyMsg,
     h('div', null, 'Name'),
     h('input', {
       type: 'text',

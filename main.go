@@ -103,9 +103,10 @@ func (handler *storageHandler) init() {
 	}
 	os.MkdirAll(handler.business, os.ModePerm)
 	os.MkdirAll(handler.user, os.ModePerm)
+	rand.Seed(time.Now().UnixNano())
 	if handler.idGenerator == nil {
 		handler.idGenerator = func(contentType string) string {
-			return strconv.Itoa(rand.Int())
+			return strconv.FormatInt(rand.Int63(), 36)
 		}
 	}
 }
