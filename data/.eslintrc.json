@@ -14,14 +14,7 @@
         "import/no-absolute-path": "off"
     },
     "globals": {
-        "wasmDecryptToString": "readonly",
-        "wasmDecryptToBase64": "readonly",
-        "wasmEncryptString": "readonly",
-        "wasmEncrypt": "readonly",
-        "wasmCreateKey": "readonly",
-        "wasmEncryptAES": "readonly",
-        "wasmDecryptAES": "readonly",
-        "wasmSignFile": "readonly",
+        "wasm": "readonly",
         "Go": "readonly"
     }
 }

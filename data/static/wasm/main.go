@@ -12,16 +12,20 @@ import (
 	"syscall/js"
 )
 
+var wasm js.Value
+
 func main() {
 	c := make(chan bool)
-	js.Global().Set("wasmDecryptToString", js.FuncOf(jsDecryptToString))
-	js.Global().Set("wasmDecryptToBase64", js.FuncOf(jsDecryptToBase64))
-	js.Global().Set("wasmEncryptString", js.FuncOf(jsEncryptString))
-	js.Global().Set("wasmEncrypt", js.FuncOf(jsEncrypt))
-	js.Global().Set("wasmCreateKey", js.FuncOf(jsCreateKey))
-	js.Global().Set("wasmEncryptAES", js.FuncOf(jsEncryptAES))
-	js.Global().Set("wasmDecryptAES", js.FuncOf(jsDecryptAES))
-	js.Global().Set("wasmSignFile", js.FuncOf(jsSign))
+	wasm = js.ValueOf(map[string]interface{}{})
+	js.Global().Set("wasm", wasm)
+	wasm.Set("decryptToString", js.FuncOf(jsDecryptToString))
+	wasm.Set("decryptToBase64", js.FuncOf(jsDecryptToBase64))
+	wasm.Set("encryptString", js.FuncOf(jsEncryptString))
+	wasm.Set("encrypt", js.FuncOf(jsEncrypt))
+	wasm.Set("createKey", js.FuncOf(jsCreateKey))
+	wasm.Set("encryptAES", js.FuncOf(jsEncryptAES))
+	wasm.Set("decryptAES", js.FuncOf(jsDecryptAES))
+	wasm.Set("signFile", js.FuncOf(jsSign))
 	<-c
 }
 
@@ -157,8 +161,8 @@ func getRsaKey() *rsa.PrivateKey {
 	pkBase64 := base64.StdEncoding.EncodeToString(pkData)
 	pubData := x509.MarshalPKCS1PublicKey(&rsaKey.PublicKey)
 	pubBase64 := base64.StdEncoding.EncodeToString(pubData)
-	store("pub", pubBase64)
-	store("pk", pkBase64)
+	wasm.Set("pub", pubBase64)
+	wasm.Set("pk", pkBase64)
 	return rsaKey
 }
 
@@ -167,10 +171,15 @@ func store(key string, val string) {
 }
 
 func retrieve(key string) *string {
-	val := js.Global().Get("localStorage").Call("getItem", key)
-	if val.Truthy() {
+	if val := wasm.Get("pk"); val.Truthy() {
 		value := val.String()
 		return &value
+	}
+	if localStorage := js.Global().Get("localStorage"); localStorage.Truthy() {
+		if val := localStorage.Call("getItem", key); val.Truthy() {
+			value := val.String()
+			return &value
+		}
 	}
 	return nil
 }

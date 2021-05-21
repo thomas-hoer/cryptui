@@ -106,7 +106,7 @@ func (handler *storageHandler) init() {
 	rand.Seed(time.Now().UnixNano())
 	if handler.idGenerator == nil {
 		handler.idGenerator = func(contentType string) string {
-			return strconv.FormatInt(rand.Int63(), 36)
+			return strconv.FormatInt(rand.Int63(), 36) + "-" + strconv.FormatInt(rand.Int63(), 36)
 		}
 	}
 }

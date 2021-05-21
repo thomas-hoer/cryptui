@@ -87,7 +87,9 @@ const createThumbnail = (id, file) => {
           const w = 150 * iw / ih
           ctx.drawImage(image, -(w - 300) / 2, 0, w, 150)
         }
-        encryptString(canvas.toDataURL('image/jpeg', 0.2)).then(thumbnail => {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.2)
+        localStorage.setItem(id, dataUrl)
+        encryptString(dataUrl).then(thumbnail => {
           const body = JSON.stringify(thumbnail)
           signFile(body)
             .then(sign =>
@@ -101,6 +103,41 @@ const createThumbnail = (id, file) => {
       })
     }
   })
+}
+
+const worker = new Worker('/component/worker.js')
+function loadAndDecrypt (name, then) {
+  const path = window.location.pathname + name
+  const request = indexedDB.open('db', 1)
+  request.onupgradeneeded = ev => {
+    const db = ev.target.result
+    db.createObjectStore('data', { keyPath: 'path', autoIncrement: false })
+  }
+  request.onsuccess = ev => {
+    const db = ev.target.result
+    const transaction = db.transaction('data', 'readonly')
+    const store = transaction.objectStore('data')
+    const objectStoreRequest = store.get(path)
+    objectStoreRequest.onsuccess = ev => ev.target.result && then(ev.target.result.data)
+  }
+  fetch('files').then(res => res.json()).then(res => {
+    worker.postMessage({ pk: localStorage.getItem('pk'), data: res })
+    worker.onmessage = out => then(JSON.parse(out.data))
+  })
+}
+function saveAndEncrypt (name, data) {
+  const path = window.location.pathname + name
+  const request = indexedDB.open('db', 1)
+  request.onupgradeneeded = ev => {
+    const db = ev.target.result
+    db.createObjectStore('data', { keyPath: 'path', autoIncrement: false })
+  }
+  request.onsuccess = ev => {
+    const db = ev.target.result
+    const transaction = db.transaction('data', 'readwrite')
+    const store = transaction.objectStore('data')
+    store.put({ path: path, data: data })
+  }
 }
 
 /**
@@ -121,8 +158,9 @@ function Folder (props) {
   const [uploadList, setUploadList] = useState([])
   const [selected, setSelected] = useState({})
   useEffect(() => {
-    fetch('files').then((res) => res.json()).then(decryptToString).then(json => {
-      knownFiles.push(...JSON.parse(json))
+    loadAndDecrypt('files', json => {
+      knownFiles.length = 0
+      knownFiles.push(...json)
       setFiles([...knownFiles])
     })
     fetch('?json').then((res) => res.json()).then(setFolders)
@@ -147,6 +185,7 @@ function Folder (props) {
             body: body,
             headers: { signature: sign }
           }))
+      saveAndEncrypt('files', [...knownFiles])
       setFiles([...knownFiles])
     })
   }
@@ -262,10 +301,20 @@ function ImageComp (props) {
   const [src, setSrc] = useState()
   useEffect(() => {
     if (props.file.thumb) {
-      fetch('/files/' + props.file.id + '/thumb.json')
-        .then(res => res.json())
-        .then(decryptToString)
-        .then(setSrc)
+      const dataUrl = localStorage.getItem(props.file.id)
+      if (dataUrl) {
+        setSrc(dataUrl)
+      } else {
+        fetch('/files/' + props.file.id + '/thumb.json')
+          .then(res => res.json())
+          .then(decryptToString)
+          .then(res => {
+            setSrc(res)
+            if (!localStorage.getItem(props.file.id)) {
+              localStorage.setItem(props.file.id, res)
+            }
+          })
+      }
     }
   }, [true])
   const selectElement = e => {
