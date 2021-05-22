@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"fmt"
 	"syscall/js"
 )
 
@@ -16,26 +17,79 @@ var wasm js.Value
 
 func main() {
 	c := make(chan bool)
-	wasm = js.ValueOf(map[string]interface{}{})
+	wasm = js.ValueOf(map[string]interface{}{
+		"decryptToBase64": js.FuncOf(jsDecryptToBase64),
+		"encryptString":   js.FuncOf(jsEncryptString),
+		"encrypt":         js.FuncOf(jsEncrypt),
+		"createKey":       js.FuncOf(jsCreateKey),
+		"encryptAES":      js.FuncOf(jsEncryptAES),
+		"decryptAES":      js.FuncOf(jsDecryptAES),
+		"execute":         js.FuncOf(jsExecute),
+	})
 	js.Global().Set("wasm", wasm)
-	wasm.Set("decryptToString", js.FuncOf(jsDecryptToString))
-	wasm.Set("decryptToBase64", js.FuncOf(jsDecryptToBase64))
-	wasm.Set("encryptString", js.FuncOf(jsEncryptString))
-	wasm.Set("encrypt", js.FuncOf(jsEncrypt))
-	wasm.Set("createKey", js.FuncOf(jsCreateKey))
-	wasm.Set("encryptAES", js.FuncOf(jsEncryptAES))
-	wasm.Set("decryptAES", js.FuncOf(jsDecryptAES))
-	wasm.Set("signFile", js.FuncOf(jsSign))
 	<-c
 }
 
-func jsSign(this js.Value, args []js.Value) interface{} {
-	input := args[0].String()
+func jsExecute(this js.Value, args []js.Value) interface{} {
+	if len(args) != 1 {
+		return nil
+	}
+	arg := args[0]
+	if arg.Type() != js.TypeObject {
+		return nil
+	}
+	defer func() {
+		// The program should crash if a panic occures, however this does not replace a proper error handling.
+		if r := recover(); r != nil {
+			arg.Set("msg", fmt.Sprint(r))
+			fmt.Println("Recovered from panic", r)
+		}
+	}()
+	function := arg.Get("function").String()
+	switch function {
+	case "sign":
+		sign(arg)
+	case "decryptToString":
+		decryptToString(arg)
+	}
+	return arg
+}
+func getKey(input string) (*rsa.PrivateKey, error) {
+	data, err := base64.StdEncoding.DecodeString(input)
+	if err != nil {
+		return nil, err
+	}
+	pk, err := x509.ParsePKCS1PrivateKey(data)
+	if err != nil {
+		return nil, err
+	}
+	return pk, nil
+}
 
-	rsaPrivateKey := getRsaKey()
-	hashed := sha256.Sum256([]byte(input))
-	signature, _ := rsa.SignPKCS1v15(rand.Reader, rsaPrivateKey, crypto.SHA256, hashed[:])
-	return base64.StdEncoding.EncodeToString(signature)
+func decryptToString(arg js.Value) {
+	key, err := getKey(arg.Get("key").String())
+	if err != nil {
+		arg.Set("msg", err.Error())
+		return
+	}
+	arg.Set("plain", string(decrypt(arg.Get("data"), key)))
+}
+
+func sign(arg js.Value) {
+	key, err := getKey(arg.Get("key").String())
+	if err != nil {
+		arg.Set("msg", err.Error())
+		return
+	}
+	data := arg.Get("data").String()
+	hashed := sha256.Sum256([]byte(data))
+	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hashed[:])
+	if err != nil {
+		arg.Set("msg", err.Error())
+	} else {
+		sign := base64.StdEncoding.EncodeToString(signature)
+		arg.Set("sign", sign)
+	}
 }
 
 func jsCreateKey(this js.Value, args []js.Value) interface{} {
@@ -120,11 +174,10 @@ func jsEncrypt(this js.Value, args []js.Value) interface{} {
 	return encryptData(secretMessage)
 }
 
-func decrypt(input js.Value) []byte {
+func decrypt(input js.Value, rsaKey *rsa.PrivateKey) []byte {
 	ciphertext, _ := base64.StdEncoding.DecodeString(input.Get("data").String())
 	ciphertextKey, _ := base64.StdEncoding.DecodeString(input.Get("key").String())
 	nonce, _ := base64.StdEncoding.DecodeString(input.Get("nonce").String())
-	rsaKey := getRsaKey()
 	aesKey, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaKey, ciphertextKey, []byte{})
 	if err != nil {
 		return nil
@@ -141,12 +194,8 @@ func decrypt(input js.Value) []byte {
 	return plain
 }
 
-func jsDecryptToString(this js.Value, args []js.Value) interface{} {
-	return string(decrypt(args[0]))
-}
-
 func jsDecryptToBase64(this js.Value, args []js.Value) interface{} {
-	return base64.StdEncoding.EncodeToString(decrypt(args[0]))
+	return base64.StdEncoding.EncodeToString(decrypt(args[0], getRsaKey()))
 }
 
 func getRsaKey() *rsa.PrivateKey {

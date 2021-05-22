@@ -2,7 +2,40 @@
 import { h, Fragment } from '/js/preact.js'
 import { useState, useEffect, useRef } from '/js/hooks.js'
 import { Board, Grid } from '/component/components.js'
-import { decryptToString, decryptToBase64, encrypt, encryptString, signFile } from '/component/wasm.js'
+import { decryptToBase64, encrypt, encryptString } from '/component/wasm.js'
+
+const worker = new Worker('/component/worker.js')
+const workerThen = { nextId: 1 }
+worker.onmessage = out => {
+  const data = out.data
+  if (data.id && workerThen[data.id]) {
+    workerThen[data.id](data)
+    delete workerThen[data.id]
+  }
+}
+
+function signAndSend (body, method, location, contentType) {
+  const res = { fn: () => {} }
+  res.then = fn => { res.fn = fn }
+  const workerId = workerThen.nextId++
+  workerThen[workerId] = out =>
+    fetch(location, {
+      method: method,
+      body: out.data,
+      headers: {
+        'User-Id': localStorage.getItem('userId'),
+        'Content-Type': contentType,
+        signature: out.sign
+      }
+    }).then(res.fn)
+  worker.postMessage({
+    function: 'sign',
+    key: localStorage.getItem('pk'),
+    data: body,
+    id: workerId
+  })
+  return res
+}
 
 const download = (f) => {
   fetch('/files/' + f.id + '/data.json').then((res) => res.json()).then(decryptToBase64).then(str => {
@@ -28,15 +61,7 @@ const upload = async (file, userId) => {
   const int8Array = new Uint8Array(result)
   return encrypt(int8Array).then(enc => {
     const body = JSON.stringify(enc)
-    return signFile(body).then(sign => fetch('/files/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/file.instance',
-        'User-Id': userId,
-        signature: sign
-      },
-      body: body
-    }))
+    return signAndSend(body, 'POST', '/files/', 'application/file.instance')
   })
     .then((res) => {
       return { id: res.headers.get('Id'), file: file }
@@ -91,21 +116,13 @@ const createThumbnail = (id, file) => {
         localStorage.setItem(id, dataUrl)
         encryptString(dataUrl).then(thumbnail => {
           const body = JSON.stringify(thumbnail)
-          signFile(body)
-            .then(sign =>
-              fetch('/files/' + id + '/thumb.json', {
-                method: 'PUT',
-                body: body,
-                headers: { signature: sign }
-              }))
-            .then(resolve)
+          signAndSend(body, 'PUT', '/files/').then(resolve)
         })
       })
     }
   })
 }
 
-const worker = new Worker('/component/worker.js')
 function loadAndDecrypt (name, then) {
   const path = window.location.pathname + name
   const request = indexedDB.open('db', 1)
@@ -120,10 +137,13 @@ function loadAndDecrypt (name, then) {
     const objectStoreRequest = store.get(path)
     objectStoreRequest.onsuccess = ev => ev.target.result && then(ev.target.result.data)
   }
-  fetch('files').then(res => res.json()).then(res => {
-    worker.postMessage({ pk: localStorage.getItem('pk'), data: res })
-    worker.onmessage = out => then(JSON.parse(out.data))
-  })
+  fetch('files')
+    .then(res => res.json())
+    .then(res => {
+      const workerId = workerThen.nextId++
+      workerThen[workerId] = out => then(JSON.parse(out.plain))
+      worker.postMessage({ function: 'decryptToString', key: localStorage.getItem('pk'), data: res, id: workerId })
+    })
 }
 function saveAndEncrypt (name, data) {
   const path = window.location.pathname + name
@@ -178,13 +198,8 @@ function Folder (props) {
     knownFiles.push(f)
     encryptString(JSON.stringify(knownFiles)).then(enc => {
       const body = JSON.stringify(enc)
-      signFile(body)
-        .then(sign =>
-          fetch('files', {
-            method: 'PUT',
-            body: body,
-            headers: { signature: sign }
-          }))
+      signAndSend(body, 'PUT', 'files')
+
       saveAndEncrypt('files', [...knownFiles])
       setFiles([...knownFiles])
     })
@@ -199,11 +214,7 @@ function Folder (props) {
   }
   const addFolder = async ev => {
     ev.preventDefault()
-    fetch(newFolderName + '/type', {
-      method: 'PUT',
-      body: 'folder/instance',
-      headers: { signature: await signFile('folder/instance') }
-    }).then(() => {
+    signAndSend('folder/instance', 'PUT', newFolderName + '/type').then(() => {
       setFolders([...folders, newFolderName + '/'])
       setNewFolderName('')
     })
@@ -214,12 +225,7 @@ function Folder (props) {
       filesRef.current = filesRef.current.filter((f, i) => !selected[i])
       const enc = await encryptString(JSON.stringify(filesRef.current))
       const body = JSON.stringify(enc)
-      signFile(body)
-        .then(sign => fetch('files', {
-          method: 'PUT',
-          body: body,
-          headers: { signature: sign }
-        }))
+      signAndSend(body, 'PUT', 'files')
       setFiles([...filesRef.current])
       props.setMenu(undefined)
       setSelected({})
@@ -307,12 +313,15 @@ function ImageComp (props) {
       } else {
         fetch('/files/' + props.file.id + '/thumb.json')
           .then(res => res.json())
-          .then(decryptToString)
           .then(res => {
-            setSrc(res)
-            if (!localStorage.getItem(props.file.id)) {
-              localStorage.setItem(props.file.id, res)
+            const workerId = workerThen.nextId++
+            workerThen[workerId] = res => {
+              setSrc(res)
+              if (!localStorage.getItem(props.file.id)) {
+                localStorage.setItem(props.file.id, res)
+              }
             }
+            worker.postMessage({ function: 'decryptToString', key: localStorage.getItem('pk'), data: res, id: workerId })
           })
       }
     }
@@ -331,7 +340,7 @@ function ImageComp (props) {
     oncontextmenu: selectElement,
     className: 'file'
   },
-  src && h('img', { src: src }),
+  src && h('img', { src: src, alt: props.file.name }),
   props.file.name
   )
 }
