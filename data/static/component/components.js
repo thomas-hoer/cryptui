@@ -64,6 +64,7 @@ function Layout (props) {
   if (props.backButton && window.history.length > 1) {
     const titleIcon = h('img', {
       className: 'header-back',
+      alt: 'Back',
       width: 32,
       height: 32,
       src: '/assets/back.png',
