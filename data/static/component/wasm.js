@@ -15,14 +15,6 @@ async function init () {
   })
 }
 
-async function decryptToBase64 (input) {
-  await init()
-  return wasm.decryptToBase64(input)
-}
-async function encryptString (input) {
-  await init()
-  return wasm.encryptString(input)
-}
 async function createKey () {
   await init()
   return wasm.createKey()
@@ -35,4 +27,4 @@ async function decryptAES (data, password) {
   await init()
   return wasm.encryptAES(data, password)
 }
-export { decryptToBase64, encryptString, encryptAES, decryptAES, createKey }
+export { encryptAES, decryptAES, createKey }

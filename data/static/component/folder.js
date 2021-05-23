@@ -2,7 +2,6 @@
 import { h, Fragment } from '/js/preact.js'
 import { useState, useEffect, useRef } from '/js/hooks.js'
 import { Board, Grid } from '/component/components.js'
-import { decryptToBase64, encryptString } from '/component/wasm.js'
 import { execute } from '/component/wasm2.js'
 
 function signAndSend (body, method, location, contentType) {
@@ -25,13 +24,16 @@ function signAndSend (body, method, location, contentType) {
 }
 
 const download = (f) => {
-  fetch('/files/' + f.id + '/data.json').then((res) => res.json()).then(decryptToBase64).then(str => {
-    const a = document.createElement('a')
-    a.noRouter = true // needed for router.js
-    a.href = 'data:octet/stream;base64,' + str
-    a.download = f.name
-    a.click()
-  })
+  fetch('/files/' + f.id + '/data.json')
+    .then(res => res.json())
+    .then(res => execute({ function: 'decryptToBase64', key: localStorage.getItem('pk'), data: res }))
+    .then(enc => {
+      const a = document.createElement('a')
+      a.noRouter = true // needed for router.js
+      a.href = 'data:octet/stream;base64,' + enc.base64
+      a.download = f.name
+      a.click()
+    })
 }
 
 const toBlob = (file) => {
@@ -43,10 +45,10 @@ const toBlob = (file) => {
   })
 }
 
-const upload = async (file, userId) => {
+const upload = async file => {
   const result = await toBlob(file)
   const int8Array = new Uint8Array(result)
-  return execute({ key: localStorage.getItem('pk'), plain: int8Array }).then(enc => {
+  return execute({ function: 'encryptArray', key: localStorage.getItem('pk'), plain: int8Array }).then(enc => {
     const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
     return signAndSend(body, 'POST', '/files/', 'application/file.instance')
   })
@@ -55,7 +57,7 @@ const upload = async (file, userId) => {
     })
 }
 
-const uploadFiles = (ev, afterUpload, addUpload, userId) => {
+const uploadFiles = (ev, afterUpload, addUpload) => {
   ev.preventDefault()
   const files = ev.target[0].files
   const fileList = []
@@ -66,7 +68,7 @@ const uploadFiles = (ev, afterUpload, addUpload, userId) => {
     for (let file = fileList.pop(); file; file = fileList.pop()) {
       const uploadElement = { name: file.name }
       addUpload(uploadElement)
-      await upload(file, userId).then(e => {
+      await upload(file).then(e => {
         uploadElement.upload = true
         afterUpload(e)
       })
@@ -101,10 +103,11 @@ const createThumbnail = (id, file) => {
         }
         const dataUrl = canvas.toDataURL('image/jpeg', 0.2)
         localStorage.setItem(id, dataUrl)
-        encryptString(dataUrl).then(thumbnail => {
-          const body = JSON.stringify(thumbnail)
-          signAndSend(body, 'PUT', '/files/' + id + '/thumb.json').then(resolve)
-        })
+        execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: dataUrl })
+          .then(enc => {
+            const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
+            signAndSend(body, 'PUT', '/files/' + id + '/thumb.json').then(resolve)
+          })
       })
     }
   })
@@ -124,7 +127,7 @@ function loadAndDecrypt (name, then) {
     const objectStoreRequest = store.get(path)
     objectStoreRequest.onsuccess = ev => ev.target.result && then(ev.target.result.data)
   }
-  fetch('files')
+  fetch(name)
     .then(res => res.json())
     .then(res => execute({ function: 'decryptToString', key: localStorage.getItem('pk'), data: res }))
     .then(out => then(JSON.parse(out.plain)))
@@ -152,7 +155,6 @@ function saveAndEncrypt (name, data) {
  * @return {object} vdom of the component
  */
 function Folder (props) {
-  const userId = localStorage.getItem('userId')
   const filesRef = useRef([])
   const knownFiles = filesRef.current
   const [files, setFiles] = useState(knownFiles)
@@ -180,13 +182,13 @@ function Folder (props) {
   }
   const addFile = f => {
     knownFiles.push(f)
-    encryptString(JSON.stringify(knownFiles)).then(enc => {
-      const body = JSON.stringify(enc)
-      signAndSend(body, 'PUT', 'files')
-
-      saveAndEncrypt('files', [...knownFiles])
-      setFiles([...knownFiles])
-    })
+    execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(knownFiles) })
+      .then(enc => {
+        const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
+        signAndSend(body, 'PUT', 'files')
+        saveAndEncrypt('files', [...knownFiles])
+        setFiles([...knownFiles])
+      })
   }
   const afterUpload = ({ id, file }) => {
     if (file.type.substring(0, 5) === 'image') {
@@ -207,8 +209,8 @@ function Folder (props) {
     icon: '/assets/delete.png',
     action: async () => {
       filesRef.current = filesRef.current.filter((f, i) => !selected[i])
-      const enc = await encryptString(JSON.stringify(filesRef.current))
-      const body = JSON.stringify(enc)
+      const enc = await execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(filesRef.current) })
+      const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
       signAndSend(body, 'PUT', 'files')
       setFiles([...filesRef.current])
       props.setMenu(undefined)
@@ -225,7 +227,7 @@ function Folder (props) {
   return h(Fragment, null,
     h(Grid, null,
       h(Board, { title: 'Upload' },
-        h('form', { onsubmit: (ev) => uploadFiles(ev, afterUpload, addUpload, userId) },
+        h('form', { onsubmit: (ev) => uploadFiles(ev, afterUpload, addUpload) },
           h('input', { type: 'file', multiple: 'multiple' }),
           h('input', { type: 'submit' })
         )
