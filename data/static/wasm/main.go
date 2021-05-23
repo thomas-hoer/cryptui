@@ -20,7 +20,6 @@ func main() {
 	wasm = js.ValueOf(map[string]interface{}{
 		"decryptToBase64": js.FuncOf(jsDecryptToBase64),
 		"encryptString":   js.FuncOf(jsEncryptString),
-		"encrypt":         js.FuncOf(jsEncrypt),
 		"createKey":       js.FuncOf(jsCreateKey),
 		"encryptAES":      js.FuncOf(jsEncryptAES),
 		"decryptAES":      js.FuncOf(jsDecryptAES),
@@ -51,9 +50,28 @@ func jsExecute(this js.Value, args []js.Value) interface{} {
 		sign(arg)
 	case "decryptToString":
 		decryptToString(arg)
+	case "encryptArray":
+		encryptArray(arg)
 	}
 	return arg
 }
+
+func encryptArray(arg js.Value) {
+	input := arg.Get("plain")
+	size := input.Length()
+	secretMessage := make([]byte, size)
+	js.CopyBytesToGo(secretMessage, input)
+	key, err := getKey(arg.Get("key").String())
+	if err != nil {
+		arg.Set("msg", err.Error())
+		return
+	}
+	data, datakey, nonce := encryptData(secretMessage, key)
+	input.Set("data", data)
+	input.Set("datakey", datakey)
+	input.Set("nonce", nonce)
+}
+
 func getKey(input string) (*rsa.PrivateKey, error) {
 	data, err := base64.StdEncoding.DecodeString(input)
 	if err != nil {
@@ -142,8 +160,7 @@ func encryptAES(secretMessage string, password string) map[string]interface{} {
 	}
 }
 
-func encryptData(secretMessage []byte) map[string]interface{} {
-	rsaKey := getRsaKey()
+func encryptData(secretMessage []byte, rsaKey *rsa.PrivateKey) (string, string, string) {
 	aesKey := make([]byte, 16)
 	nonce := make([]byte, 12)
 	rand.Read(aesKey)
@@ -154,24 +171,20 @@ func encryptData(secretMessage []byte) map[string]interface{} {
 
 	ciphertextKey, _ := rsa.EncryptOAEP(sha256.New(), rand.Reader, &rsaKey.PublicKey, aesKey, []byte{})
 
-	return map[string]interface{}{
-		"data":  base64.StdEncoding.EncodeToString(ciphertext),
-		"key":   base64.StdEncoding.EncodeToString(ciphertextKey),
-		"nonce": base64.StdEncoding.EncodeToString(nonce),
-	}
+	return base64.StdEncoding.EncodeToString(ciphertext),
+		base64.StdEncoding.EncodeToString(ciphertextKey),
+		base64.StdEncoding.EncodeToString(nonce)
 }
 
 func jsEncryptString(this js.Value, args []js.Value) interface{} {
 	secretMessage := []byte(args[0].String())
-	return encryptData(secretMessage)
-}
-
-func jsEncrypt(this js.Value, args []js.Value) interface{} {
-	input := args[0]
-	size := input.Length()
-	secretMessage := make([]byte, size)
-	js.CopyBytesToGo(secretMessage, input)
-	return encryptData(secretMessage)
+	rsaKey := getRsaKey()
+	data, key, nonce := encryptData(secretMessage, rsaKey)
+	return map[string]interface{}{
+		"data":  data,
+		"key":   key,
+		"nonce": nonce,
+	}
 }
 
 func decrypt(input js.Value, rsaKey *rsa.PrivateKey) []byte {
