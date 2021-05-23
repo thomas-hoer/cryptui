@@ -15,10 +15,6 @@ async function init () {
   })
 }
 
-async function createKey () {
-  await init()
-  return wasm.createKey()
-}
 async function encryptAES (input) {
   await init()
   return wasm.encryptAES(input)
@@ -27,4 +23,4 @@ async function decryptAES (data, password) {
   await init()
   return wasm.encryptAES(data, password)
 }
-export { encryptAES, decryptAES, createKey }
+export { encryptAES, decryptAES }

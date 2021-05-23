@@ -18,7 +18,6 @@ var wasm js.Value
 func main() {
 	c := make(chan bool)
 	wasm = js.ValueOf(map[string]interface{}{
-		"createKey":  js.FuncOf(jsCreateKey),
 		"encryptAES": js.FuncOf(jsEncryptAES),
 		"decryptAES": js.FuncOf(jsDecryptAES),
 		"execute":    js.FuncOf(jsExecute),
@@ -54,6 +53,8 @@ func jsExecute(this js.Value, args []js.Value) interface{} {
 		encryptArray(arg)
 	case "encryptString":
 		encryptString(arg)
+	case "createKey":
+		createKey(arg)
 	default:
 		fmt.Println("Unknown function", function)
 	}
@@ -78,8 +79,6 @@ func encryptArray(arg js.Value) {
 
 func encryptString(arg js.Value) {
 	secretMessage := arg.Get("plain").String()
-	fmt.Print("encryptString")
-	fmt.Print(secretMessage)
 	key, err := getKey(arg.Get("key").String())
 	if err != nil {
 		arg.Set("msg", err.Error())
@@ -137,9 +136,14 @@ func sign(arg js.Value) {
 	}
 }
 
-func jsCreateKey(this js.Value, args []js.Value) interface{} {
-	getRsaKey()
-	return nil
+func createKey(arg js.Value) {
+	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pkData := x509.MarshalPKCS1PrivateKey(rsaKey)
+	pkBase64 := base64.StdEncoding.EncodeToString(pkData)
+	pubData := x509.MarshalPKCS1PublicKey(&rsaKey.PublicKey)
+	pubBase64 := base64.StdEncoding.EncodeToString(pubData)
+	arg.Set("pub", pubBase64)
+	arg.Set("pk", pkBase64)
 }
 
 func jsEncryptAES(this js.Value, args []js.Value) interface{} {
@@ -221,39 +225,4 @@ func decrypt(input js.Value, rsaKey *rsa.PrivateKey) []byte {
 		return nil
 	}
 	return plain
-}
-
-func getRsaKey() *rsa.PrivateKey {
-	key := retrieve("pk")
-	if key != nil {
-		data, _ := base64.StdEncoding.DecodeString(*key)
-		pk, _ := x509.ParsePKCS1PrivateKey(data)
-		return pk
-	}
-	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	pkData := x509.MarshalPKCS1PrivateKey(rsaKey)
-	pkBase64 := base64.StdEncoding.EncodeToString(pkData)
-	pubData := x509.MarshalPKCS1PublicKey(&rsaKey.PublicKey)
-	pubBase64 := base64.StdEncoding.EncodeToString(pubData)
-	wasm.Set("pub", pubBase64)
-	wasm.Set("pk", pkBase64)
-	return rsaKey
-}
-
-func store(key string, val string) {
-	js.Global().Get("localStorage").Call("setItem", key, val)
-}
-
-func retrieve(key string) *string {
-	if val := wasm.Get("pk"); val.Truthy() {
-		value := val.String()
-		return &value
-	}
-	if localStorage := js.Global().Get("localStorage"); localStorage.Truthy() {
-		if val := localStorage.Call("getItem", key); val.Truthy() {
-			value := val.String()
-			return &value
-		}
-	}
-	return nil
 }

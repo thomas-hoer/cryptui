@@ -2,7 +2,7 @@
 import { h } from '/js/preact.js'
 import { useState, useEffect } from '/js/hooks.js'
 import { Layout, Board, Grid } from '/component/components.js'
-import { createKey } from '/component/wasm.js'
+import { execute } from '/component/wasm2.js'
 /**
  * Creates the homepage for the cryptui project.
  *
@@ -57,7 +57,11 @@ function NewAccount () {
       onClick: () => {
         setCreateKeyDisabled(true)
         setCreateKeyMsg('Generating')
-        createKey().then(() => setCreateKeyMsg('Finished'))
+        execute({ function: 'createKey' }).then(res => {
+          localStorage.setItem('pk', res.pk)
+          localStorage.setItem('pub', res.pub)
+          setCreateKeyMsg('Finished')
+        })
       }
     }),
     createKeyMsg,
