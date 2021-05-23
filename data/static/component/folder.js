@@ -1,8 +1,8 @@
 'use strict'
 import { h, Fragment } from '/js/preact.js'
 import { useState, useEffect, useRef } from '/js/hooks.js'
+import { execute } from '/js/wasm.js'
 import { Board, Grid } from '/component/components.js'
-import { execute } from '/component/wasm2.js'
 
 function signAndSend (body, method, location, contentType) {
   const data = {

@@ -1,8 +1,8 @@
 'use strict'
 import { h } from '/js/preact.js'
 import { useState, useEffect } from '/js/hooks.js'
+import { execute } from '/js/wasm.js'
 import { Layout, Board, Grid } from '/component/components.js'
-import { execute } from '/component/wasm2.js'
 /**
  * Creates the homepage for the cryptui project.
  *

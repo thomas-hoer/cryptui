@@ -1,8 +1,8 @@
 'use strict'
 import { h } from '/js/preact.js'
 import { useState, useEffect } from '/js/hooks.js'
+import { execute } from '/js/wasm.js'
 import { Layout, Board, Grid } from '/component/components.js'
-import { encryptAES, decryptAES } from '/component/wasm.js'
 /**
  * Creates a page for profile and settings.
  *
@@ -36,8 +36,8 @@ function Page () {
       pub: localStorage.getItem('pub'),
       userId: localStorage.getItem('userId')
     }
-    encryptAES(JSON.stringify(dat), password)
-      .then(encrypted => download(JSON.stringify(encrypted)))
+    execute({ function: 'encryptAES', password: password, plain: JSON.stringify(dat) })
+      .then(enc => download(JSON.stringify({ data: enc.data, nonce: enc.nonce, salt: enc.salt })))
   }
   const toText = (file) => {
     return new Promise((resolve, reject) => {
@@ -52,15 +52,16 @@ function Page () {
     ev.preventDefault()
     const json = await toText(ev.target[1].files[0])
     const data = JSON.parse(json)
-    decryptAES(data, password).then(keyDataJson => {
-      if (keyDataJson !== '') {
-        const keyData = JSON.parse(keyDataJson)
-        localStorage.setItem('pk', keyData.pk)
-        localStorage.setItem('pub', keyData.pub)
-        localStorage.setItem('userId', keyData.userId)
-        ev.target.reset()
-      }
-    })
+    execute({ function: 'decryptAES', data: data.data, nonce: data.nonce, salt: data.salt, password: password })
+      .then(keyDataJson => {
+        if (typeof keyDataJson === 'object') {
+          const keyData = JSON.parse(keyDataJson.plain)
+          localStorage.setItem('pk', keyData.pk)
+          localStorage.setItem('pub', keyData.pub)
+          localStorage.setItem('userId', keyData.userId)
+          ev.target.reset()
+        }
+      })
   }
 
   return h(Layout, layoutOptions,

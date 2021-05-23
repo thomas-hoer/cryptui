@@ -1,8 +1,8 @@
-const worker = new Worker('/component/worker.js')
+const worker = new Worker('/js/worker.js')
 const workerThen = { nextId: 1 }
 worker.onmessage = out => {
   const data = out.data
-  if (data.id && workerThen[data.id]) {
+  if (out && data.id && workerThen[data.id]) {
     workerThen[data.id](data)
     delete workerThen[data.id]
   }

@@ -17,12 +17,7 @@ var wasm js.Value
 
 func main() {
 	c := make(chan bool)
-	wasm = js.ValueOf(map[string]interface{}{
-		"encryptAES": js.FuncOf(jsEncryptAES),
-		"decryptAES": js.FuncOf(jsDecryptAES),
-		"execute":    js.FuncOf(jsExecute),
-	})
-	js.Global().Set("wasm", wasm)
+	js.Global().Set("wasm", js.FuncOf(jsExecute))
 	<-c
 }
 
@@ -55,6 +50,10 @@ func jsExecute(this js.Value, args []js.Value) interface{} {
 		encryptString(arg)
 	case "createKey":
 		createKey(arg)
+	case "encryptAES":
+		encryptAES(arg)
+	case "decryptAES":
+		decryptAES(arg)
 	default:
 		fmt.Println("Unknown function", function)
 	}
@@ -107,7 +106,7 @@ func decryptToString(arg js.Value) {
 		arg.Set("msg", err.Error())
 		return
 	}
-	arg.Set("plain", string(decrypt(arg.Get("data"), key)))
+	arg.Set("plain", string(decryptRSA(arg.Get("data"), key)))
 }
 
 func decryptToBase64(arg js.Value) {
@@ -116,7 +115,7 @@ func decryptToBase64(arg js.Value) {
 		arg.Set("msg", err.Error())
 		return
 	}
-	arg.Set("base64", base64.StdEncoding.EncodeToString(decrypt(arg.Get("data"), key)))
+	arg.Set("base64", base64.StdEncoding.EncodeToString(decryptRSA(arg.Get("data"), key)))
 }
 
 func sign(arg js.Value) {
@@ -146,21 +145,11 @@ func createKey(arg js.Value) {
 	arg.Set("pk", pkBase64)
 }
 
-func jsEncryptAES(this js.Value, args []js.Value) interface{} {
-	secretMessage := args[0].String()
-	password := args[1].String()
-	return encryptAES(secretMessage, password)
-}
-
-func jsDecryptAES(this js.Value, args []js.Value) interface{} {
-	secretMessage := args[0]
-	password := args[1].String()
-	return decryptAES(secretMessage, password)
-}
-func decryptAES(input js.Value, password string) string {
-	ciphertext, _ := base64.StdEncoding.DecodeString(input.Get("data").String())
-	salt, _ := base64.StdEncoding.DecodeString(input.Get("salt").String())
-	nonce, _ := base64.StdEncoding.DecodeString(input.Get("nonce").String())
+func decryptAES(arg js.Value) {
+	password := arg.Get("password").String()
+	ciphertext, _ := base64.StdEncoding.DecodeString(arg.Get("data").String())
+	salt, _ := base64.StdEncoding.DecodeString(arg.Get("salt").String())
+	nonce, _ := base64.StdEncoding.DecodeString(arg.Get("nonce").String())
 	sha := sha256.New()
 	sha.Write(salt)
 	aesKey := sha.Sum([]byte(password))[:16]
@@ -168,10 +157,12 @@ func decryptAES(input js.Value, password string) string {
 	block, _ := aes.NewCipher(aesKey)
 	aesGCM, _ := cipher.NewGCM(block)
 	plain, _ := aesGCM.Open(nil, nonce, ciphertext, nil)
-	return string(plain)
+	arg.Set("plain", string(plain))
 }
 
-func encryptAES(secretMessage string, password string) map[string]interface{} {
+func encryptAES(arg js.Value) {
+	secretMessage := arg.Get("plain").String()
+	password := arg.Get("password").String()
 	nonce := make([]byte, 12)
 	rand.Read(nonce)
 	salt := make([]byte, 12)
@@ -184,11 +175,9 @@ func encryptAES(secretMessage string, password string) map[string]interface{} {
 	aesGCM, _ := cipher.NewGCM(block)
 	ciphertext := aesGCM.Seal(nil, nonce, []byte(secretMessage), nil)
 
-	return map[string]interface{}{
-		"data":  base64.StdEncoding.EncodeToString(ciphertext),
-		"nonce": base64.StdEncoding.EncodeToString(nonce),
-		"salt":  base64.StdEncoding.EncodeToString(salt),
-	}
+	arg.Set("data", base64.StdEncoding.EncodeToString(ciphertext))
+	arg.Set("nonce", base64.StdEncoding.EncodeToString(nonce))
+	arg.Set("salt", base64.StdEncoding.EncodeToString(salt))
 }
 
 func encryptData(secretMessage []byte, rsaKey *rsa.PrivateKey) (string, string, string) {
@@ -207,7 +196,7 @@ func encryptData(secretMessage []byte, rsaKey *rsa.PrivateKey) (string, string, 
 		base64.StdEncoding.EncodeToString(nonce)
 }
 
-func decrypt(input js.Value, rsaKey *rsa.PrivateKey) []byte {
+func decryptRSA(input js.Value, rsaKey *rsa.PrivateKey) []byte {
 	ciphertext, _ := base64.StdEncoding.DecodeString(input.Get("data").String())
 	ciphertextKey, _ := base64.StdEncoding.DecodeString(input.Get("key").String())
 	nonce, _ := base64.StdEncoding.DecodeString(input.Get("nonce").String())

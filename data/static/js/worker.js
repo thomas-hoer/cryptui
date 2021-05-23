@@ -8,4 +8,4 @@ async function init () {
   const go = new Go()
   return WebAssembly.instantiateStreaming(fetch('/wasm/main.wasm'), go.importObject).then(result => { go.run(result.instance) })
 }
-onmessage = e => init().then(() => postMessage(wasm.execute(e.data)))
+onmessage = e => init().then(() => postMessage(wasm(e.data)))
