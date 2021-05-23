@@ -23,7 +23,7 @@ function signAndSend (body, method, location, contentType) {
   })
 }
 
-const download = (f) => {
+const download = f => {
   fetch('/files/' + f.id + '/data.json')
     .then(res => res.json())
     .then(res => execute({ function: 'decryptToBase64', key: localStorage.getItem('pk'), data: res }))
@@ -36,7 +36,7 @@ const download = (f) => {
     })
 }
 
-const toBlob = (file) => {
+const toBlob = file => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.readAsArrayBuffer(file)
@@ -212,6 +212,7 @@ function Folder (props) {
       const enc = await execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(filesRef.current) })
       const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
       signAndSend(body, 'PUT', 'files')
+      saveAndEncrypt('files', [...filesRef.current])
       setFiles([...filesRef.current])
       props.setMenu(undefined)
       setSelected({})

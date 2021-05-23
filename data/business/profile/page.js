@@ -21,7 +21,7 @@ function Page () {
     backButton: true,
     title: 'Profile'
   }
-  const download = (dat) => {
+  const download = dat => {
     const str = btoa(dat)
     const a = document.createElement('a')
     a.noRouter = true // needed for router.js
@@ -29,7 +29,7 @@ function Page () {
     a.download = user.name + '.cryptuikey'
     a.click()
   }
-  const downloadKey = (ev) => {
+  const downloadKey = ev => {
     ev.preventDefault()
     const dat = {
       pk: localStorage.getItem('pk'),

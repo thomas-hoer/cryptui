@@ -74,7 +74,10 @@ function Layout (props) {
   } else {
     title.push(h('div', null, props.title))
   }
-  title.push(h('a', { href: '/profile/' }, 'My Profile'))
+  title.push(props.menu
+    ? h('div', null, props.menu.map(menu => h('img', { onClick: menu.action, src: menu.icon })))
+    : h('a', { href: '/profile/' }, 'My Profile')
+  )
   return h(Fragment, null,
     h('div', { className: 'header' }, title),
     h('div', { className: 'body' },
