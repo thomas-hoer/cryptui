@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 func gzipper(handler Handler) http.Handler {
 	cache := make(map[string][]byte)
 	static := strings.ReplaceAll(handler.getStatic(), `\`, "/")
-	filepath.WalkDir(static, func(path string, info fs.DirEntry, err error) error {
+	if err := filepath.WalkDir(static, func(path string, info fs.DirEntry, err error) error {
 		if info.IsDir() {
 			return nil
 		}
@@ -37,7 +38,9 @@ func gzipper(handler Handler) http.Handler {
 		writer.Close()
 		cache[key] = buf.Bytes()
 		return nil
-	})
+	}); err != nil {
+		log.Panic(err)
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			handler.ServeHTTP(w, r)

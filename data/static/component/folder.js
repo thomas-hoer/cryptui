@@ -4,21 +4,27 @@ import { useState, useEffect, useRef } from '/js/hooks.js'
 import { execute } from '/js/wasm.js'
 import { Board, Grid } from '/component/components.js'
 
-function signAndSend (body, method, location, contentType) {
+function signAndSend (body, method, location, contentType, etag) {
   const data = {
     function: 'sign',
     key: localStorage.getItem('pk'),
     data: body
   }
   return execute(data).then(out => {
+    const headers = {
+      'User-Id': localStorage.getItem('userId'),
+      signature: out.sign
+    }
+    if (contentType) {
+      headers['Content-Type'] = contentType
+    }
+    if (etag && etag.current) {
+      headers['If-Match'] = etag.current
+    }
     return fetch(location, {
       method: method,
       body: out.data,
-      headers: {
-        'User-Id': localStorage.getItem('userId'),
-        'Content-Type': contentType,
-        signature: out.sign
-      }
+      headers: headers
     })
   })
 }
@@ -106,14 +112,14 @@ const createThumbnail = (id, file) => {
         execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: dataUrl })
           .then(enc => {
             const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
-            signAndSend(body, 'PUT', '/files/' + id + '/thumb.json').then(resolve)
+            signAndSend(body, 'PUT', '/files/' + id + '/thumb.json', 'application/json').then(resolve)
           })
       })
     }
   })
 }
 
-function loadAndDecrypt (name, then) {
+function loadAndDecrypt (name, etag, then) {
   const path = window.location.pathname + name
   const request = indexedDB.open('db', 1)
   request.onupgradeneeded = ev => {
@@ -128,7 +134,10 @@ function loadAndDecrypt (name, then) {
     objectStoreRequest.onsuccess = ev => ev.target.result && then(ev.target.result.data)
   }
   fetch(name)
-    .then(res => res.json())
+    .then(res => {
+      etag.current = res.headers.get('ETag')
+      return res.json()
+    })
     .then(res => execute({ function: 'decryptToString', key: localStorage.getItem('pk'), data: res }))
     .then(out => then(JSON.parse(out.plain)))
 }
@@ -155,6 +164,7 @@ function saveAndEncrypt (name, data) {
  * @return {object} vdom of the component
  */
 function Folder (props) {
+  const etag = useRef()
   const filesRef = useRef([])
   const knownFiles = filesRef.current
   const [files, setFiles] = useState(knownFiles)
@@ -164,7 +174,7 @@ function Folder (props) {
   const [uploadList, setUploadList] = useState([])
   const [selected, setSelected] = useState({})
   useEffect(() => {
-    loadAndDecrypt('files', json => {
+    loadAndDecrypt('files', etag, json => {
       knownFiles.length = 0
       knownFiles.push(...json)
       setFiles([...knownFiles])
@@ -185,7 +195,7 @@ function Folder (props) {
     execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(knownFiles) })
       .then(enc => {
         const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
-        signAndSend(body, 'PUT', 'files')
+        signAndSend(body, 'PUT', 'files', 'application/json', etag).then(res => { etag.current = res.headers.get('ETag') })
         saveAndEncrypt('files', [...knownFiles])
         setFiles([...knownFiles])
       })
@@ -211,7 +221,7 @@ function Folder (props) {
       filesRef.current = filesRef.current.filter((f, i) => !selected[i])
       const enc = await execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(filesRef.current) })
       const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
-      signAndSend(body, 'PUT', 'files')
+      signAndSend(body, 'PUT', 'files', 'application/json', etag).then(res => { etag.current = res.headers.get('ETag') })
       saveAndEncrypt('files', [...filesRef.current])
       setFiles([...filesRef.current])
       props.setMenu(undefined)

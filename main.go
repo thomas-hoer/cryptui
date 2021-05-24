@@ -93,9 +93,6 @@ func (handler *storageHandler) getStatic() string {
 	return handler.static
 }
 func (handler *storageHandler) init() {
-	// index is the most important part of the website. If it is not present
-	// the application should not start. Also it makes sense to cache the data
-	// since it is the most acquired resource of your website.
 	if index, err := os.ReadFile(handler.static + "/index.html"); err == nil {
 		handler.index = index
 	} else {
@@ -112,14 +109,8 @@ func (handler *storageHandler) init() {
 }
 
 func (handler *storageHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	splits := strings.Split(req.RequestURI, "?")
-	requestURI := splits[0]
-	var queryParam string = ""
-	if len(splits) > 1 {
-		queryParam = splits[1]
-	}
 	if req.Method == "GET" {
-		handler.handleGetUser(resp, requestURI, queryParam)
+		handler.handleGetUser(resp, req)
 	} else if req.Method == "POST" {
 		handler.handlePostUser(resp, req)
 	} else if req.Method == "PUT" {
@@ -130,19 +121,26 @@ func (handler *storageHandler) ServeHTTP(resp http.ResponseWriter, req *http.Req
 	}
 }
 
-func (handler *storageHandler) handleGetUser(resp http.ResponseWriter, requestURI, queryParam string) {
+func (handler *storageHandler) handleGetUser(resp http.ResponseWriter, req *http.Request) {
+	requestURI := req.URL.Path
 	filename := handler.user + requestURI
 	fileInfo, err := os.Stat(filename)
 	if os.IsNotExist(err) {
-		handler.handleGetType(resp, requestURI, queryParam)
+		handler.handleGetType(resp, req)
 	} else if fileInfo.IsDir() {
 		if !strings.HasSuffix(filename, "/") {
 			resp.Header().Set("Location", requestURI+"/")
 			resp.WriteHeader(http.StatusMovedPermanently)
 		} else {
-			handler.handleGetIndex(resp, handler.user, requestURI, queryParam)
+			handler.handleGetIndex(resp, handler.user, req)
 		}
 	} else {
+		etag := `\W"` + strconv.FormatInt(fileInfo.ModTime().UnixNano(), 36) + `"`
+		if req.Header.Get("If-None-Match") == etag {
+			resp.WriteHeader(http.StatusNotModified)
+			return
+		}
+		resp.Header().Add("ETag", etag)
 		if dat, err := os.Open(filename); err == nil {
 			defer dat.Close()
 			io.Copy(resp, dat)
@@ -153,8 +151,8 @@ func (handler *storageHandler) handleGetUser(resp http.ResponseWriter, requestUR
 	}
 }
 
-func (handler *storageHandler) handleGetIndex(resp http.ResponseWriter, base, requestURI, queryParam string) {
-	fileInfos, err := os.ReadDir(base + requestURI)
+func (handler *storageHandler) handleGetIndex(resp http.ResponseWriter, base string, req *http.Request) {
+	fileInfos, err := os.ReadDir(base + req.URL.Path)
 	if err != nil {
 		log.Print(err.Error())
 		resp.WriteHeader(http.StatusNotFound)
@@ -169,7 +167,7 @@ func (handler *storageHandler) handleGetIndex(resp http.ResponseWriter, base, re
 		}
 	}
 	jsonOutput := `[` + strings.Join(names, `,`) + `]`
-	if queryParam == "json" {
+	if req.URL.RawQuery == "json" {
 		resp.Header().Add(contentType, "application/json")
 		resp.Write([]byte(jsonOutput))
 	} else {
@@ -178,15 +176,16 @@ func (handler *storageHandler) handleGetIndex(resp http.ResponseWriter, base, re
 	}
 }
 
-func (handler *storageHandler) handleGetType(resp http.ResponseWriter, requestURI, queryParam string) {
-	typefile := filepath.Dir(handler.user+requestURI) + "/type"
+func (handler *storageHandler) handleGetType(resp http.ResponseWriter, req *http.Request) {
+	fileName := handler.user + req.URL.Path
+	typefile := filepath.Dir(fileName) + "/type"
 	if fileInfo, err := os.Stat(typefile); err == nil && !fileInfo.IsDir() {
 		if dat, err := os.ReadFile(typefile); err == nil {
 			typeRoot := string(dat)
-			filename := filepath.Base(handler.user + requestURI)
+			filename := filepath.Base(fileName)
 			redirect := "/" + typeRoot + "/" + filename
-			if redirect == requestURI {
-				handler.handleGetStatic(resp, requestURI, queryParam)
+			if redirect == req.URL.Path {
+				handler.handleGetStatic(resp, req)
 			} else {
 				resp.Header().Add("Location", redirect)
 				resp.WriteHeader(http.StatusSeeOther)
@@ -195,24 +194,26 @@ func (handler *storageHandler) handleGetType(resp http.ResponseWriter, requestUR
 		}
 	}
 
-	handler.handleGetStatic(resp, requestURI, queryParam)
+	handler.handleGetStatic(resp, req)
 }
-func (handler *storageHandler) handleGetStatic(resp http.ResponseWriter, requestURI, queryParam string) {
-	if fileInfo, err := os.Stat(handler.static + requestURI); err == nil && !fileInfo.IsDir() {
-		if dat, err := os.Open(handler.static + requestURI); err == nil {
+func (handler *storageHandler) handleGetStatic(resp http.ResponseWriter, req *http.Request) {
+	fileName := handler.static + req.URL.Path
+	if fileInfo, err := os.Stat(fileName); err == nil && !fileInfo.IsDir() {
+		if dat, err := os.Open(fileName); err == nil {
 			defer dat.Close()
 			io.Copy(resp, dat)
 			return
 		}
 	}
 
-	handler.handleGetBusiness(resp, requestURI, queryParam)
+	handler.handleGetBusiness(resp, req)
 }
 
-func (handler *storageHandler) handleGetBusiness(resp http.ResponseWriter, requestURI, queryParam string) {
+func (handler *storageHandler) handleGetBusiness(resp http.ResponseWriter, req *http.Request) {
+	requestURI := req.URL.Path
 	if fileInfo, err := os.Stat(handler.business + requestURI); err == nil {
 		if fileInfo.IsDir() {
-			handler.handleGetIndex(resp, handler.business, requestURI, queryParam)
+			handler.handleGetIndex(resp, handler.business, req)
 			return
 		} else if dat, err := os.Open(handler.business + requestURI); err == nil {
 			defer dat.Close()
@@ -308,6 +309,19 @@ func (handler *storageHandler) handlePutUser(resp http.ResponseWriter, req *http
 	os.MkdirAll(dir, os.ModePerm)
 	userData := getUserData(handler.user, filename)
 	if userData != nil {
+		fileInfo, err := os.Stat(filename)
+		ifMatch := req.Header.Get("If-Match")
+		if err == nil {
+			etag := `\W"` + strconv.FormatInt(fileInfo.ModTime().UnixNano(), 36) + `"`
+			if ifMatch != etag {
+				resp.WriteHeader(http.StatusPreconditionFailed)
+				return
+			}
+		} else if ifMatch != "" && err != nil {
+			resp.WriteHeader(http.StatusPreconditionFailed)
+			return
+		}
+
 		keyData, err := base64.StdEncoding.DecodeString(userData.Key)
 		if err != nil {
 			resp.WriteHeader(500)
@@ -329,6 +343,9 @@ func (handler *storageHandler) handlePutUser(resp http.ResponseWriter, req *http
 			if signature, err := base64.StdEncoding.DecodeString(req.Header["Signature"][0]); err == nil {
 				if err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], signature); err == nil {
 					os.WriteFile(filename, newData, os.ModePerm)
+					fileInfo, _ := os.Stat(filename)
+					etag := `\W"` + strconv.FormatInt(fileInfo.ModTime().UnixNano(), 36) + `"`
+					resp.Header().Add("ETag", etag)
 					resp.WriteHeader(http.StatusAccepted)
 					return
 				}
