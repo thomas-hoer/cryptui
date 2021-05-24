@@ -3,7 +3,6 @@ html, body {
 }
 
 body {
-	overscroll-behavior: none;
 	margin: 0px;
 	font-family: Arial;
 }
@@ -20,7 +19,7 @@ body::-webkit-scrollbar {
 	width: 100%;
 }
 
-.header {
+header {
 	position: fixed;
 	top: 0px;
 	left: 0px;
@@ -37,21 +36,21 @@ body::-webkit-scrollbar {
 	box-shadow: 0px 0px 2px #AAAAAA;
 }
 
-.header a{
+header a{
 	color:#FFF;
 	text-decoration: none;
 }
-.header div {
+header div {
 	display: flex;
 	align-items: center;
 	padding: 0px 8px;
 }
 
-.header div img {
+header div img {
 	padding: 8px;
 }
 
-.header .menu-icon {
+header .menu-icon {
 	display: none;
 	padding: 8px;
 }

@@ -22,24 +22,26 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 }
 func gzipper(handler Handler) http.Handler {
 	cache := make(map[string][]byte)
-	static := strings.ReplaceAll(handler.getStatic(), `\`, "/")
-	if err := filepath.WalkDir(static, func(path string, info fs.DirEntry, err error) error {
-		if info.IsDir() {
+	if settings["cacheStatic"] == true {
+		static := strings.ReplaceAll(handler.getStatic(), `\`, "/")
+		if err := filepath.WalkDir(static, func(path string, info fs.DirEntry, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+			key := strings.Replace(strings.ReplaceAll(path, `\`, "/"), static, "", 1)
+			dat, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			var buf bytes.Buffer
+			writer := gzip.NewWriter(&buf)
+			writer.Write(dat)
+			writer.Close()
+			cache[key] = buf.Bytes()
 			return nil
+		}); err != nil {
+			log.Panic(err)
 		}
-		key := strings.Replace(strings.ReplaceAll(path, `\`, "/"), static, "", 1)
-		dat, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		var buf bytes.Buffer
-		writer := gzip.NewWriter(&buf)
-		writer.Write(dat)
-		writer.Close()
-		cache[key] = buf.Bytes()
-		return nil
-	}); err != nil {
-		log.Panic(err)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {

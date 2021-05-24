@@ -27,7 +27,21 @@ type Handler interface {
 	getStatic() string
 }
 
+var settings = map[string]interface{}{}
+
 func main() {
+	settingsData, err := os.ReadFile("settings.json")
+	if err != nil {
+		log.Println(err)
+	} else {
+		json.Unmarshal(settingsData, &settings)
+	}
+
+	if settings["logFile"] == true {
+		logFile, _ := os.OpenFile("log-"+time.Now().Format("2006-01-02")+".txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, os.ModePerm)
+		log.SetOutput(logFile)
+	}
+
 	sh := &storageHandler{
 		static:   "data/static",
 		business: "data/business",
@@ -76,7 +90,7 @@ func handleMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 		if logRequests {
 			elapsed := time.Since(start)
-			log.Printf("%v %v took %v", r.Method, r.RequestURI, elapsed)
+			log.Printf("%v %v %v took %v", r.RemoteAddr, r.Method, r.RequestURI, elapsed)
 		}
 	})
 }

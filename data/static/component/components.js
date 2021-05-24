@@ -79,11 +79,11 @@ function Layout (props) {
     : h('a', { href: '/profile/' }, 'My Profile')
   )
   return h(Fragment, null,
-    h('div', { className: 'header' }, title),
+    h('header', null, title),
     h('div', { className: 'body' },
       h('div', { className: 'content-wrapper' }, props.children)
-    ),
-    h('div', { className: 'footer' })
+    )
+    // h('footer', {})
   )
 }
 
