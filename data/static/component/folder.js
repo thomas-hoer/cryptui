@@ -133,7 +133,7 @@ function loadAndDecrypt (name, etag, then) {
     const objectStoreRequest = store.get(path)
     objectStoreRequest.onsuccess = ev => ev.target.result && then(ev.target.result.data)
   }
-  fetch(name)
+  return fetch(name)
     .then(res => {
       etag.current = res.headers.get('ETag')
       return res.json()
@@ -141,7 +141,7 @@ function loadAndDecrypt (name, etag, then) {
     .then(res => execute({ function: 'decryptToString', key: localStorage.getItem('pk'), data: res }))
     .then(out => then(JSON.parse(out.plain)))
 }
-function saveAndEncrypt (name, data) {
+function saveLocally (name, data) {
   const path = window.location.pathname + name
   const request = indexedDB.open('db', 1)
   request.onupgradeneeded = ev => {
@@ -173,12 +173,15 @@ function Folder (props) {
   const uploadListRef = useRef([])
   const [uploadList, setUploadList] = useState([])
   const [selected, setSelected] = useState({})
+
+  const loadFilesFromServer = () => loadAndDecrypt('files', etag, json => {
+    knownFiles.length = 0
+    knownFiles.push(...json)
+    setFiles([...knownFiles])
+  })
+
   useEffect(() => {
-    loadAndDecrypt('files', etag, json => {
-      knownFiles.length = 0
-      knownFiles.push(...json)
-      setFiles([...knownFiles])
-    })
+    loadFilesFromServer()
     fetch('?json').then((res) => res.json()).then(setFolders)
   }, [true])
 
@@ -190,15 +193,20 @@ function Folder (props) {
     uploadListRef.current.push(up)
     setUploadList([...uploadListRef.current])
   }
-  const addFile = f => {
+  const addFile = async f => {
     knownFiles.push(f)
-    execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(knownFiles) })
-      .then(enc => {
-        const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
-        signAndSend(body, 'PUT', 'files', 'application/json', etag).then(res => { etag.current = res.headers.get('ETag') })
-        saveAndEncrypt('files', [...knownFiles])
-        setFiles([...knownFiles])
+    const enc = await execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(knownFiles) })
+    const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
+    signAndSend(body, 'PUT', 'files', 'application/json', etag)
+      .then(res => {
+        if (res.status === 200) {
+          etag.current = res.headers.get('ETag')
+        } else if (res.status === 412) {
+          loadFilesFromServer().then(() => addFile(f))
+        }
       })
+    saveLocally('files', [...knownFiles])
+    setFiles([...knownFiles])
   }
   const afterUpload = ({ id, file }) => {
     if (file.type.substring(0, 5) === 'image') {
@@ -218,11 +226,11 @@ function Folder (props) {
   const menu = [{
     icon: '/assets/delete.png',
     action: async () => {
-      filesRef.current = filesRef.current.filter((f, i) => !selected[i])
+      filesRef.current = filesRef.current.filter(f => !selected[f.id])
       const enc = await execute({ function: 'encryptString', key: localStorage.getItem('pk'), plain: JSON.stringify(filesRef.current) })
       const body = JSON.stringify({ data: enc.data, key: enc.datakey, nonce: enc.nonce })
       signAndSend(body, 'PUT', 'files', 'application/json', etag).then(res => { etag.current = res.headers.get('ETag') })
-      saveAndEncrypt('files', [...filesRef.current])
+      saveLocally('files', [...filesRef.current])
       setFiles([...filesRef.current])
       props.setMenu(undefined)
       setSelected({})
@@ -267,18 +275,18 @@ function Folder (props) {
         key: f.name,
         file: f,
         select: () => {
-          if (selected[i]) {
-            delete selected[i]
+          if (selected[f.id]) {
+            delete selected[f.id]
             if (Object.keys(selected).length === 0) {
               props.setMenu(undefined)
             }
           } else {
-            selected[i] = true
+            selected[f.id] = true
             props.setMenu(menu)
           }
           setSelected({ ...selected })
         },
-        isSelected: selected[i],
+        isSelected: selected[f.id],
         isSelection: Object.keys(selected).length !== 0
       }))
     ),
