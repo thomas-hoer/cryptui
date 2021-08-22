@@ -21,8 +21,8 @@ function Page () {
   }, [true])
   return h(Layout, layoutOptions,
     h(Grid, null,
-      h(NewAccount),
       h(About),
+      h(NewAccount),
       user && h(Board, { title: h('a', { href: '/user/' + userId + '/' }, user.name) },
         h('div', null
         )
@@ -79,7 +79,7 @@ function NewAccount () {
   )
 }
 function About () {
-  return h(Board, { title: 'About the project' },
+  return h(Board, { title: 'The only cloud storage with a real end to end encryption' },
     h('p', null, 'Goal of this project is to provide a platform independent file host, where all of your files are getting encrpyted right before you upload it. It aim to be as easy to use as other well known file hoster.'),
     h('p', null, 'The project is open source, so you can easily set up your own file hosting server.'),
     h('a', {
